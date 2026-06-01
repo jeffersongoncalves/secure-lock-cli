@@ -6,6 +6,7 @@ use App\Enums\Verdict;
 use App\Services\AdvisoryClient;
 use App\Services\Auditor;
 use App\Services\HttpFetcher;
+use App\Services\NpmAdvisoryClient;
 use App\Services\PackagistAdvisoryClient;
 use App\Services\RegistryClient;
 use App\Support\Advisory;
@@ -125,6 +126,32 @@ it('stays UNKNOWN when both GitHub and Packagist fail', function () {
     $results = $auditor->run([new Package('acme/lib', '1.0.0', Ecosystem::Composer, source: 'composer')]);
 
     expect($results[0]->verdict)->toBe(Verdict::Unknown);
+});
+
+it('recovers a rate-limited GitHub lookup for npm via the npm audit fallback', function () {
+    Http::fake([
+        'registry.npmjs.org/-/npm/v1/security/advisories/bulk' => Http::response([
+            'lodash' => [
+                ['id' => 1, 'url' => 'https://github.com/advisories/GHSA-x', 'title' => 'Prototype Pollution', 'severity' => 'high', 'vulnerable_versions' => '<4.17.12', 'cves' => ['CVE-2019-10744']],
+            ],
+        ]),
+        'registry.npmjs.org/lodash' => Http::response(['dist-tags' => ['latest' => '4.18.1']]),
+        'api.github.com/advisories*' => Http::response('', 403, ['X-RateLimit-Remaining' => '0']),
+    ]);
+
+    $fetcher = new HttpFetcher(new HttpCache(sys_get_temp_dir().'/secure-lock-test', 0));
+    $auditor = new Auditor(
+        new RegistryClient($fetcher),
+        new AdvisoryClient($fetcher),
+        $fetcher,
+        null,
+        new NpmAdvisoryClient($fetcher),
+    );
+
+    $results = $auditor->run([new Package('lodash', '4.17.4', Ecosystem::Npm, source: 'npm')]);
+
+    expect($results[0]->verdict)->toBe(Verdict::SafeUpdate)
+        ->and($results[0]->unverified)->toBeFalse();
 });
 
 it('classifies a failed advisory lookup as UNKNOWN, never OK', function () {

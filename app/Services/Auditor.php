@@ -24,6 +24,7 @@ final class Auditor
         private readonly AdvisoryClient $advisories,
         private readonly HttpFetcher $fetcher,
         private readonly ?PackagistAdvisoryClient $packagist = null,
+        private readonly ?NpmAdvisoryClient $npm = null,
     ) {}
 
     /**
@@ -37,6 +38,7 @@ final class Auditor
 
         $this->enrich($packages);
         $this->recoverWithPackagist($packages);
+        $this->recoverWithNpm($packages);
 
         $results = [];
 
@@ -110,6 +112,42 @@ final class Auditor
         }
 
         $recovered = $this->packagist->forComposerPackages($names);
+
+        foreach ($packages as $package) {
+            $result = $recovered[$package->name] ?? null;
+
+            if ($result !== null && ! $result->failed && $package->advisoriesFailed) {
+                $package->advisories = $result->advisories;
+                $package->advisoriesFailed = false;
+            }
+        }
+    }
+
+    /**
+     * Fall back to the npm audit endpoint for npm-ecosystem packages whose
+     * GitHub lookup failed, mirroring the Packagist fallback for Composer.
+     *
+     * @param  list<Package>  $packages
+     */
+    private function recoverWithNpm(array $packages): void
+    {
+        if ($this->npm === null) {
+            return;
+        }
+
+        $failed = [];
+
+        foreach ($packages as $package) {
+            if ($package->advisoriesFailed && $package->ecosystem === Ecosystem::Npm) {
+                $failed[] = $package;
+            }
+        }
+
+        if ($failed === []) {
+            return;
+        }
+
+        $recovered = $this->npm->forPackages($failed);
 
         foreach ($packages as $package) {
             $result = $recovered[$package->name] ?? null;

@@ -10,6 +10,7 @@ use App\Services\Auditor;
 use App\Services\Fixer;
 use App\Services\HttpFetcher;
 use App\Services\LockReader;
+use App\Services\NpmAdvisoryClient;
 use App\Services\PackagistAdvisoryClient;
 use App\Services\RegistryClient;
 use App\Services\SarifReporter;
@@ -36,6 +37,7 @@ class AuditCommand extends Command
         {--config= : Path to a secure-lock.json config (auto-detected otherwise)}
         {--fail-on-unverified : Exit non-zero when an advisory lookup fails}
         {--no-packagist : Disable the Packagist advisory fallback for Composer}
+        {--no-npm-audit : Disable the npm audit advisory fallback for JS}
         {--json : Structured JSON output (for CI)}
         {--sarif : SARIF 2.1.0 output (for GitHub code scanning)}
         {--github-token= : GitHub token (or the GITHUB_TOKEN env var)}
@@ -193,12 +195,14 @@ class AuditCommand extends Command
         $fetcher = new HttpFetcher(new HttpCache($this->cacheDirectory(), $ttl));
 
         $packagist = $this->option('no-packagist') ? null : new PackagistAdvisoryClient($fetcher);
+        $npm = $this->option('no-npm-audit') ? null : new NpmAdvisoryClient($fetcher);
 
         return new Auditor(
             new RegistryClient($fetcher),
             new AdvisoryClient($fetcher, is_string($token) ? $token : null),
             $fetcher,
             $packagist,
+            $npm,
         );
     }
 

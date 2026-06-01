@@ -59,6 +59,42 @@ final class HttpFetcher
     }
 
     /**
+     * Cache-aware POST (used by the npm audit bulk endpoint). The cache key
+     * includes the body so different payloads don't collide.
+     *
+     * @param  array<string, mixed>  $body
+     * @param  array<string, string>  $headers
+     * @return array{failed: bool, data: array<mixed>|null, reason: ?string}
+     */
+    public function post(string $url, array $body, array $headers = []): array
+    {
+        $key = 'POST '.$url.' '.md5((string) json_encode($body));
+
+        $cached = $this->cache->peek($key);
+
+        if ($cached['hit']) {
+            /** @var array{failed: bool, data: array<mixed>|null, reason: ?string} $value */
+            $value = $cached['value'];
+
+            return $value;
+        }
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->retry(2, 200, throw: false)
+                ->withHeaders($headers)
+                ->post($url, $body);
+            $outcome = $this->interpret($response);
+        } catch (Throwable $e) {
+            $outcome = $this->failure($e->getMessage());
+        }
+
+        $this->remember($key, $outcome);
+
+        return $outcome;
+    }
+
+    /**
      * Resolve many requests, reusing cache and pooling the misses concurrently.
      *
      * @param  array<string, array{url: string, headers?: array<string, string>}>  $requests  keyed by caller id
@@ -142,11 +178,11 @@ final class HttpFetcher
     /**
      * @param  array{failed: bool, data: array<mixed>|null, reason: ?string}  $outcome
      */
-    private function remember(string $url, array $outcome): void
+    private function remember(string $key, array $outcome): void
     {
         // Never cache a failed lookup — retry it on the next run.
         if ($outcome['failed'] === false) {
-            $this->cache->store($url, $outcome);
+            $this->cache->store($key, $outcome);
         }
     }
 }

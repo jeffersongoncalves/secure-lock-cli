@@ -91,6 +91,7 @@ target one explicitly.
 --config=             Path to a secure-lock.json (auto-detected otherwise)
 --fail-on-unverified  Exit non-zero when an advisory lookup fails
 --no-packagist        Disable the Packagist advisory fallback for Composer
+--no-npm-audit        Disable the npm audit advisory fallback for JS
 --json                Structured JSON output (for CI)
 --sarif               SARIF 2.1.0 output (for GitHub code scanning)
 --github-token=       GitHub token (or the GITHUB_TOKEN env var)
@@ -218,11 +219,13 @@ jobs:
   receives **only the package name** (e.g. `guzzlehttp/guzzle`) — the
   ecosystem goes in its own parameter. Prefixing it (`composer:...`) returns
   `200` with a silently empty list.
-- **Packagist fallback** — when a Composer package's GitHub lookup fails (e.g.
-  the rate limit without a token), the Packagist Security Advisories API is
-  queried as a redundant source (one batched request for all such packages),
-  recovering the result instead of leaving it `UNKNOWN`. Disable with
-  `--no-packagist`.
+- **Redundant fallbacks** — when a package's GitHub lookup fails (e.g. the
+  rate limit without a token), a second source is queried so the result is
+  recovered instead of left `UNKNOWN`: the **Packagist Security Advisories**
+  API for Composer, and the **npm audit** bulk endpoint for npm/pnpm/bun/yarn.
+  Each is one batched request for all failed packages. As a result every
+  ecosystem can be audited with no token at all. Disable with `--no-packagist`
+  / `--no-npm-audit`.
 - **Semver** — comparisons and range satisfaction use `composer/semver`,
   including GHSA ranges where a comma means logical AND
   (e.g. `>= 7.0.0, < 7.4.5`).
@@ -271,5 +274,6 @@ lockfiles created during tests live under `tests/tmp/` (gitignored).
 
 ## Roadmap
 
-- npm/pnpm/bun advisory fallback (the npm audit endpoint) mirroring the
-  Packagist fallback for Composer.
+The core feature set is complete (multi-ecosystem audit, safe-update
+classification, `--fix`, redundant advisory fallbacks, SARIF). Ideas welcome
+via issues.
