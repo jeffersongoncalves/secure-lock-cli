@@ -7,6 +7,7 @@ namespace App\Commands;
 use App\Enums\Verdict;
 use App\Services\AdvisoryClient;
 use App\Services\Auditor;
+use App\Services\Fixer;
 use App\Services\LockReader;
 use App\Services\RegistryClient;
 use App\Support\AuditResult;
@@ -23,13 +24,15 @@ class AuditCommand extends Command
         {--npm= : Explicit path to package-lock.json}
         {--pnpm= : Explicit path to pnpm-lock.yaml}
         {--bun= : Explicit path to bun.lock}
+        {--yarn= : Explicit path to yarn.lock}
         {--only-vuln : Show only packages that are at risk}
+        {--fix : Print upgrade commands that leave every vulnerable range}
         {--no-dev : Ignore development dependencies}
         {--json : Structured JSON output (for CI)}
         {--github-token= : GitHub token (or the GITHUB_TOKEN env var)}
         {--cache-ttl=3600 : HTTP cache TTL in seconds (0 disables caching)}';
 
-    protected $description = 'Audit Composer, npm, pnpm and bun dependencies for known vulnerabilities and safe updates';
+    protected $description = 'Audit Composer, npm, pnpm, bun and yarn dependencies for known vulnerabilities and safe updates';
 
     public function handle(LockReader $reader): int
     {
@@ -44,7 +47,7 @@ class AuditCommand extends Command
         }
 
         if ($packages === []) {
-            $this->reportInputError('No lockfile found. Looked for composer.lock, pnpm-lock.yaml, bun.lock and package-lock.json.', $json);
+            $this->reportInputError('No lockfile found. Looked for composer.lock, pnpm-lock.yaml, bun.lock, yarn.lock and package-lock.json.', $json);
 
             return 2;
         }
@@ -61,6 +64,10 @@ class AuditCommand extends Command
         } else {
             $this->renderTable($results);
             $this->renderSummary($results);
+
+            if ($this->option('fix')) {
+                $this->renderFixes($results);
+            }
         }
 
         return $this->exitCode($results);
@@ -84,6 +91,7 @@ class AuditCommand extends Command
                 'npm' => $reader->readNpm($path),
                 'pnpm' => $reader->readPnpm($path),
                 'bun' => $reader->readBun($path),
+                'yarn' => $reader->readYarn($path),
             }];
         }
 
@@ -121,7 +129,7 @@ class AuditCommand extends Command
     {
         $explicit = [];
 
-        foreach (['npm', 'pnpm', 'bun'] as $manager) {
+        foreach (['npm', 'pnpm', 'bun', 'yarn'] as $manager) {
             $path = $this->option($manager);
 
             if (is_string($path) && $path !== '') {
@@ -137,7 +145,7 @@ class AuditCommand extends Command
             return $explicit;
         }
 
-        foreach (['pnpm' => 'pnpm-lock.yaml', 'bun' => 'bun.lock', 'npm' => 'package-lock.json', 'npm-shrinkwrap' => 'npm-shrinkwrap.json'] as $manager => $file) {
+        foreach (['pnpm' => 'pnpm-lock.yaml', 'bun' => 'bun.lock', 'yarn' => 'yarn.lock', 'npm' => 'package-lock.json', 'npm-shrinkwrap' => 'npm-shrinkwrap.json'] as $manager => $file) {
             $path = $this->lockInBaseDir($file);
 
             if ($path !== null) {
@@ -307,9 +315,54 @@ class AuditCommand extends Command
             ));
         }
 
-        $payload = array_map(fn (AuditResult $r): array => $r->toArray(), $results);
+        $fix = (bool) $this->option('fix');
+        $fixer = new Fixer;
+
+        $payload = array_map(function (AuditResult $r) use ($fix, $fixer): array {
+            $row = $r->toArray();
+
+            if ($fix) {
+                $row['fix'] = $fixer->suggest($r)?->toArray();
+            }
+
+            return $row;
+        }, $results);
 
         $this->output->writeln((string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
+     * @param  list<AuditResult>  $results
+     */
+    private function renderFixes(array $results): void
+    {
+        $fixer = new Fixer;
+        $commands = [];
+
+        foreach ($this->sortByRisk($results) as $result) {
+            $suggestion = $fixer->suggest($result);
+
+            if ($suggestion !== null) {
+                $commands[] = $suggestion->command;
+            }
+        }
+
+        $this->newLine();
+
+        if ($commands === []) {
+            $this->components->info('Nenhuma correção automática disponível.');
+
+            return;
+        }
+
+        $this->line('  <fg=yellow;options=bold>Correções sugeridas:</>');
+        $this->newLine();
+
+        foreach ($commands as $command) {
+            $this->line("  <fg=green>{$command}</>");
+        }
+
+        $this->newLine();
     }
 
     /**

@@ -102,6 +102,18 @@ it('audits a pnpm lockfile and reports the pnpm manager in the output', function
         ->assertExitCode(0);
 });
 
+it('prints an upgrade command with --fix for a fixable vulnerability', function () {
+    fakeGuzzleSafeUpdate();
+
+    $path = writeTempLock('composer.lock', json_encode([
+        'packages' => [['name' => 'guzzlehttp/guzzle', 'version' => '6.5.0']],
+    ]));
+
+    $this->artisan('audit', ['--composer' => $path, '--fix' => true, '--cache-ttl' => 0])
+        ->expectsOutputToContain('composer require guzzlehttp/guzzle')
+        ->assertExitCode(0);
+});
+
 it('exits 2 when no lockfile is found', function () {
     $this->artisan('audit', ['--dir' => sys_get_temp_dir().'/secure-lock-empty-'.uniqid(), '--cache-ttl' => 0])
         ->assertExitCode(2);

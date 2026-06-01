@@ -20,10 +20,10 @@ bump that fixes the flaw* from a *useless bump that stays exposed*.
 
 It covers **Composer** (`composer.lock`) and the JavaScript managers that
 share the npm ecosystem: **npm** (`package-lock.json` v1/v2/v3 and
-`npm-shrinkwrap.json`), **pnpm** (`pnpm-lock.yaml` lockfileVersion 5/6/9) and
-**bun** (`bun.lock` text lockfile). The `ECO` column shows the real manager a
-package came from, while advisories and the registry are resolved against the
-shared npm ecosystem.
+`npm-shrinkwrap.json`), **pnpm** (`pnpm-lock.yaml` lockfileVersion 5/6/9),
+**bun** (`bun.lock` text lockfile) and **yarn** (`yarn.lock` classic v1 and
+berry v2+). The `ECO` column shows the real manager a package came from, while
+advisories and the registry are resolved against the shared npm ecosystem.
 
 Built with [Laravel Zero](https://laravel-zero.com) and modeled on the
 other CLIs in this monorepo.
@@ -62,7 +62,12 @@ secure-lock --only-vuln          # only show packages at risk
 secure-lock --no-dev             # ignore dev dependencies
 secure-lock --json > audit.json  # structured output for CI
 secure-lock --dir=/path/to/proj  # audit a specific directory
+secure-lock --fix                # also print upgrade commands
 ```
+
+The JavaScript lockfile is auto-detected in the project directory by priority
+(`pnpm` > `bun` > `yarn` > `npm`); pass `--pnpm`/`--bun`/`--yarn`/`--npm` to
+target one explicitly.
 
 ### Options
 
@@ -72,7 +77,9 @@ secure-lock --dir=/path/to/proj  # audit a specific directory
 --npm=            Explicit path to package-lock.json
 --pnpm=           Explicit path to pnpm-lock.yaml
 --bun=            Explicit path to bun.lock
+--yarn=           Explicit path to yarn.lock
 --only-vuln       Show only packages at risk
+--fix             Print upgrade commands that leave every vulnerable range
 --no-dev          Ignore development dependencies
 --json            Structured JSON output (for CI)
 --github-token=   GitHub token (or the GITHUB_TOKEN env var)
@@ -95,6 +102,27 @@ version against those still hitting the **latest** version:
 The table is sorted by risk (`VULN` > `RISCO` > `SEGURO` > `UPDATE` > `OK`)
 and the `OBSERVAÇÃO` column shows the highest-severity advisory as
 `SEVERITY CVE-XXXX (+N)` (the CVE when present, otherwise the GHSA id).
+
+## Fixing
+
+Pass `--fix` to also print, per manager, the upgrade command for each
+currently-vulnerable package. The target is the **smallest** version greater
+than the installed one that escapes *every* vulnerable range (computed from the
+advisories' patched versions and the latest release), so the bump is minimal
+and verified — not just "the newest":
+
+```bash
+$ secure-lock --fix
+...
+  Correções sugeridas:
+
+  composer require guzzlehttp/guzzle:^6.5.8
+  pnpm add marked@4.0.0
+```
+
+Packages with no version that leaves the vulnerable range (`VULN`) are skipped.
+In `--json` mode each package gains a `fix` object (`{target, command}`) or
+`null`.
 
 ## Exit codes (for CI)
 
@@ -164,7 +192,7 @@ lockfiles created during tests live under `tests/tmp/` (gitignored).
 
 ## Roadmap
 
-- `--fix` flag to emit the `composer require` / `npm install` commands that
-  pull the minimum patched versions leaving every vulnerable range.
 - Packagist Security Advisories API as a redundant advisory backend when the
   GitHub rate limit tightens.
+- Transitive-aware `--fix` (currently emits a direct `add`/`require` per
+  vulnerable package).

@@ -300,6 +300,198 @@ final class LockReader
     }
 
     /**
+     * Read a yarn.lock — classic v1 (custom format) or berry v2+ (YAML).
+     * All entries resolve to the npm ecosystem; the manager label is "yarn".
+     *
+     * yarn.lock records no dev/prod split, so dev flags are inferred from a
+     * sibling package.json when present (direct devDependencies only).
+     *
+     * @return list<Package>
+     *
+     * @throws RuntimeException on a missing file or invalid content.
+     */
+    public function readYarn(string $path): array
+    {
+        if (! is_file($path)) {
+            throw new RuntimeException("Lockfile not found: {$path}");
+        }
+
+        $raw = file_get_contents($path);
+
+        if ($raw === false) {
+            throw new RuntimeException("Could not read lockfile: {$path}");
+        }
+
+        [$devDirect, $prodDirect] = $this->yarnDirectDeps($path);
+
+        // Berry (v2+) lockfiles are YAML and carry a "__metadata" block.
+        $entries = str_contains($raw, '__metadata')
+            ? $this->parseYarnBerry($raw, $path)
+            : $this->parseYarnClassic($raw);
+
+        $packages = [];
+        $seen = [];
+
+        foreach ($entries as [$name, $version]) {
+            if ($name === '' || $version === '' || isset($seen[$name])) {
+                continue;
+            }
+
+            $seen[$name] = true;
+
+            $packages[] = new Package(
+                name: $name,
+                current: Version::normalize($version),
+                ecosystem: Ecosystem::Npm,
+                isDev: isset($devDirect[$name]) && ! isset($prodDirect[$name]),
+                source: 'yarn',
+            );
+        }
+
+        return $packages;
+    }
+
+    /**
+     * Parse a classic (v1) yarn.lock. Descriptor lines sit at column 0 and end
+     * with ":"; the "version" line is indented beneath them.
+     *
+     * @return list<array{0: string, 1: string}> [name, version] pairs
+     */
+    private function parseYarnClassic(string $raw): array
+    {
+        $entries = [];
+        $names = [];
+
+        foreach (preg_split('/\R/', $raw) ?: [] as $line) {
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            // Descriptor header: not indented, ends with ":".
+            if (! str_starts_with($line, ' ') && str_ends_with(rtrim($line), ':')) {
+                $header = rtrim(rtrim($line), ':');
+                $names = [];
+
+                foreach (explode(',', $header) as $descriptor) {
+                    $name = $this->yarnDescriptorName(trim($descriptor));
+
+                    if ($name !== '') {
+                        $names[] = $name;
+                    }
+                }
+
+                continue;
+            }
+
+            // Version line beneath the current header.
+            if (preg_match('/^\s+version\s+"?([^"\s]+)"?/', $line, $m) === 1 && $names !== []) {
+                foreach ($names as $name) {
+                    $entries[] = [$name, $m[1]];
+                }
+
+                $names = [];
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Parse a berry (v2+) yarn.lock via YAML. Keys are comma-joined
+     * descriptors such as "lodash@npm:^4, lodash@npm:^4.17".
+     *
+     * @return list<array{0: string, 1: string}> [name, version] pairs
+     */
+    private function parseYarnBerry(string $raw, string $path): array
+    {
+        try {
+            $data = Yaml::parse($raw);
+        } catch (\Throwable $e) {
+            throw new RuntimeException("Invalid YAML in lockfile: {$path}");
+        }
+
+        if (! is_array($data)) {
+            return [];
+        }
+
+        $entries = [];
+
+        foreach ($data as $key => $meta) {
+            if ($key === '__metadata' || ! is_string($key) || ! is_array($meta)) {
+                continue;
+            }
+
+            $version = $meta['version'] ?? null;
+
+            if (! is_string($version) || $version === '') {
+                continue;
+            }
+
+            $first = explode(',', $key)[0];
+            $name = $this->yarnDescriptorName(trim($first));
+
+            if ($name !== '') {
+                $entries[] = [$name, $version];
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Extract the package name from a yarn descriptor, dropping the range:
+     * lodash@^4.17.21 → lodash, @babel/core@npm:^7 → @babel/core.
+     */
+    private function yarnDescriptorName(string $descriptor): string
+    {
+        $descriptor = trim($descriptor, "\"' ");
+
+        $lastAt = strrpos($descriptor, '@');
+
+        if ($lastAt === false || $lastAt === 0) {
+            return $descriptor === '' ? '' : $descriptor;
+        }
+
+        return substr($descriptor, 0, $lastAt);
+    }
+
+    /**
+     * Infer direct dev/prod dependency names from a sibling package.json.
+     *
+     * @return array{0: array<string, true>, 1: array<string, true>} [dev, prod]
+     */
+    private function yarnDirectDeps(string $lockPath): array
+    {
+        $dev = [];
+        $prod = [];
+
+        $manifest = dirname($lockPath).DIRECTORY_SEPARATOR.'package.json';
+
+        if (! is_file($manifest)) {
+            return [$dev, $prod];
+        }
+
+        $raw = file_get_contents($manifest);
+        $data = $raw === false ? null : json_decode($raw, true);
+
+        if (! is_array($data)) {
+            return [$dev, $prod];
+        }
+
+        foreach (array_keys((array) ($data['dependencies'] ?? [])) as $name) {
+            $prod[(string) $name] = true;
+        }
+
+        foreach (['devDependencies', 'optionalDependencies'] as $group) {
+            foreach (array_keys((array) ($data[$group] ?? [])) as $name) {
+                $dev[(string) $name] = true;
+            }
+        }
+
+        return [$dev, $prod];
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array{0: array<string, true>, 1: array<string, true>} [dev, prod] direct dependency name sets
      */
