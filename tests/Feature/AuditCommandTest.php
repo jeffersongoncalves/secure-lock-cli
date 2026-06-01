@@ -150,11 +150,12 @@ it('marks a package UNVERIFIED when the advisory lookup is rate limited', functi
         'packages' => [['name' => 'acme/lib', 'version' => '1.0.0']],
     ]));
 
+    // Isolate the GitHub failure path (no Packagist recovery here).
     // Default: unverified does not fail CI...
-    $this->artisan('audit', ['--composer' => $path, '--cache-ttl' => 0])->assertExitCode(0);
+    $this->artisan('audit', ['--composer' => $path, '--no-packagist' => true, '--cache-ttl' => 0])->assertExitCode(0);
 
     // ...but --fail-on-unverified makes it exit 1.
-    $this->artisan('audit', ['--composer' => $path, '--fail-on-unverified' => true, '--cache-ttl' => 0])
+    $this->artisan('audit', ['--composer' => $path, '--no-packagist' => true, '--fail-on-unverified' => true, '--cache-ttl' => 0])
         ->assertExitCode(1);
 });
 

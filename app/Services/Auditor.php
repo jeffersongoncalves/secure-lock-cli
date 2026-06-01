@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\Ecosystem;
 use App\Enums\Verdict;
 use App\Support\Advisory;
 use App\Support\AuditResult;
@@ -22,6 +23,7 @@ final class Auditor
         private readonly RegistryClient $registry,
         private readonly AdvisoryClient $advisories,
         private readonly HttpFetcher $fetcher,
+        private readonly ?PackagistAdvisoryClient $packagist = null,
     ) {}
 
     /**
@@ -33,30 +35,16 @@ final class Auditor
     {
         $ignore ??= IgnoreList::empty();
 
-        // One concurrent wave for every package's registry + first advisory page.
-        $requests = [];
-
-        foreach ($packages as $i => $package) {
-            $requests["reg:$i"] = ['url' => $this->registry->url($package), 'headers' => ['Accept' => 'application/json']];
-            $requests["adv:$i"] = ['url' => $this->advisories->url($package->name, $package->ecosystem, 1), 'headers' => $this->advisories->headers()];
-        }
-
-        $outcomes = $this->fetcher->many($requests);
+        $this->enrich($packages);
+        $this->recoverWithPackagist($packages);
 
         $results = [];
 
-        foreach ($packages as $i => $package) {
-            $package->latest = $this->registry->extractLatest($package, $outcomes["reg:$i"]);
-
-            // Resume advisory collection from the pooled first page (paginates
-            // sequentially only for the rare package with >100 advisories).
-            $lookup = $this->advisories->collect($package->name, $package->ecosystem, $outcomes["adv:$i"], fromPage: 2);
-            $package->advisoriesFailed = $lookup->failed;
-
+        foreach ($packages as $package) {
             $package->advisories = $ignore->isEmpty()
-                ? $lookup->advisories
+                ? $package->advisories
                 : array_values(array_filter(
-                    $lookup->advisories,
+                    $package->advisories,
                     fn (Advisory $a): bool => ! $ignore->matches($a),
                 ));
 
@@ -68,6 +56,69 @@ final class Auditor
         }
 
         return $results;
+    }
+
+    /**
+     * One concurrent wave: every package's registry + first advisory page.
+     *
+     * @param  list<Package>  $packages
+     */
+    private function enrich(array $packages): void
+    {
+        $requests = [];
+
+        foreach ($packages as $i => $package) {
+            $requests["reg:$i"] = ['url' => $this->registry->url($package), 'headers' => ['Accept' => 'application/json']];
+            $requests["adv:$i"] = ['url' => $this->advisories->url($package->name, $package->ecosystem, 1), 'headers' => $this->advisories->headers()];
+        }
+
+        $outcomes = $this->fetcher->many($requests);
+
+        foreach ($packages as $i => $package) {
+            $package->latest = $this->registry->extractLatest($package, $outcomes["reg:$i"]);
+
+            // Resume advisory collection from the pooled first page (paginates
+            // sequentially only for the rare package with >100 advisories).
+            $lookup = $this->advisories->collect($package->name, $package->ecosystem, $outcomes["adv:$i"], fromPage: 2);
+            $package->advisories = $lookup->advisories;
+            $package->advisoriesFailed = $lookup->failed;
+        }
+    }
+
+    /**
+     * Fall back to Packagist for Composer packages whose GitHub lookup failed,
+     * so a rate-limited token does not leave them unverified.
+     *
+     * @param  list<Package>  $packages
+     */
+    private function recoverWithPackagist(array $packages): void
+    {
+        if ($this->packagist === null) {
+            return;
+        }
+
+        $names = [];
+
+        foreach ($packages as $package) {
+            if ($package->advisoriesFailed && $package->ecosystem === Ecosystem::Composer) {
+                $names[] = $package->name;
+            }
+        }
+
+        if ($names === []) {
+            return;
+        }
+
+        $recovered = $this->packagist->forComposerPackages($names);
+
+        foreach ($packages as $package) {
+            $result = $recovered[$package->name] ?? null;
+
+            if ($result !== null && ! $result->failed && $package->advisoriesFailed) {
+                $package->advisories = $result->advisories;
+                $package->advisoriesFailed = false;
+            }
+        }
     }
 
     /**

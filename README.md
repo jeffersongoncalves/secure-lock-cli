@@ -90,6 +90,7 @@ target one explicitly.
 --ignore=             Advisory id (GHSA or CVE) to suppress; repeatable
 --config=             Path to a secure-lock.json (auto-detected otherwise)
 --fail-on-unverified  Exit non-zero when an advisory lookup fails
+--no-packagist        Disable the Packagist advisory fallback for Composer
 --json                Structured JSON output (for CI)
 --sarif               SARIF 2.1.0 output (for GitHub code scanning)
 --github-token=       GitHub token (or the GITHUB_TOKEN env var)
@@ -210,6 +211,11 @@ jobs:
   receives **only the package name** (e.g. `guzzlehttp/guzzle`) — the
   ecosystem goes in its own parameter. Prefixing it (`composer:...`) returns
   `200` with a silently empty list.
+- **Packagist fallback** — when a Composer package's GitHub lookup fails (e.g.
+  the rate limit without a token), the Packagist Security Advisories API is
+  queried as a redundant source (one batched request for all such packages),
+  recovering the result instead of leaving it `UNKNOWN`. Disable with
+  `--no-packagist`.
 - **Semver** — comparisons and range satisfaction use `composer/semver`,
   including GHSA ranges where a comma means logical AND
   (e.g. `>= 7.0.0, < 7.4.5`).
@@ -258,7 +264,7 @@ lockfiles created during tests live under `tests/tmp/` (gitignored).
 
 ## Roadmap
 
-- Packagist Security Advisories API as a redundant advisory backend when the
-  GitHub rate limit tightens.
 - Transitive-aware `--fix` (currently emits a direct `add`/`require` per
   vulnerable package).
+- npm/pnpm/bun advisory fallback (the npm audit endpoint) mirroring the
+  Packagist fallback for Composer.
