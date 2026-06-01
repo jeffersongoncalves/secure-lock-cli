@@ -2,6 +2,20 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.6.0 - 2026-06-01
+
+Transitive-aware fixes.
+
+### Changed
+
+- **`--fix` is now transitive-aware.** Each package carries whether the project depends on it directly or transitively. A direct dependency still gets a plain `add`/`require`/`install`; a transitive one — which an `install` cannot reach — is pinned through the manager's override mechanism instead: `overrides` (npm/bun), `pnpm.overrides` (pnpm) or `resolutions` (yarn) in `package.json`. Composer keeps `composer require`, which pins transitive packages too. The JSON `fix` object gains a `transitive` flag.
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.5.0 - 2026-06-01
 
 Reliability for Composer without a token.
@@ -14,6 +28,7 @@ Reliability for Composer without a token.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 ```
 ## 1.4.0 - 2026-06-01
@@ -36,6 +51,7 @@ No changes to audit behavior or output.
 composer global require jeffersongoncalves/secure-lock-cli
 
 
+
 ```
 ## 1.3.0 - 2026-06-01
 
@@ -51,6 +67,7 @@ Reliability, CI control and GitHub integration.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -73,6 +90,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.2.0 - 2026-06-01
 
@@ -85,6 +103,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -112,6 +131,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -125,6 +145,7 @@ No changes to the audit behavior.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -153,6 +174,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.0 - 2026-06-01
 
@@ -172,6 +194,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
