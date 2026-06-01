@@ -18,6 +18,7 @@
         "composer/semver": "^3.4",
         "guzzlehttp/guzzle": "^7.10",
         "illuminate/http": "^12.0",
+        "larastan/larastan": "^3.0",
         "laravel-zero/framework": "^12.0",
         "laravel/pint": "^1.25",
         "mockery/mockery": "^1.6",
@@ -37,11 +38,14 @@
     "scripts": {
         "build": ["php secure-lock app:build secure-lock"],
         "lint": "./vendor/bin/pint",
+        "analyse": "./vendor/bin/phpstan analyse",
         "test:lint": "./vendor/bin/pint --test",
+        "test:types": "./vendor/bin/phpstan analyse",
         "test:unit": "./vendor/bin/pest --parallel",
         "test": [
-            "@test:unit",
-            "@test:lint"
+            "@test:lint",
+            "@test:types",
+            "@test:unit"
         ]
     },
     "config": {

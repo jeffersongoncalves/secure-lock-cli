@@ -213,8 +213,12 @@ jobs:
 - **Semver** — comparisons and range satisfaction use `composer/semver`,
   including GHSA ranges where a comma means logical AND
   (e.g. `>= 7.0.0, < 7.4.5`).
+- **Concurrency** — every package's registry and advisory lookups are fired
+  concurrently with `Http::pool` (capped), so a large lockfile is audited in a
+  few waves instead of one request at a time.
 - **Cache** — registry/advisory responses are cached to disk with a
-  configurable TTL so repeated runs don't hit the API rate limits.
+  configurable TTL so repeated runs don't hit the API rate limits. Failed
+  lookups are never cached, so a transient error is retried next run.
 
 ## Keep the CLI up to date
 
@@ -235,8 +239,9 @@ composer global update jeffersongoncalves/secure-lock-cli
 
 ```bash
 composer install
-composer test       # Pest tests + Pint lint
+composer test       # Pint lint + PHPStan + Pest tests
 composer lint       # Auto-fix style
+composer analyse    # PHPStan (level 6) static analysis
 composer build      # Build the PHAR into builds/secure-lock
 ```
 

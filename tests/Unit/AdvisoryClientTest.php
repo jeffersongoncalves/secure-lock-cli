@@ -3,12 +3,13 @@
 use App\Enums\Ecosystem;
 use App\Enums\Severity;
 use App\Services\AdvisoryClient;
+use App\Services\HttpFetcher;
 use App\Support\HttpCache;
 use Illuminate\Support\Facades\Http;
 
-function noCache(): HttpCache
+function advisoryClient(?string $token = null): AdvisoryClient
 {
-    return new HttpCache(sys_get_temp_dir().'/secure-lock-test', 0);
+    return new AdvisoryClient(new HttpFetcher(new HttpCache(sys_get_temp_dir().'/secure-lock-test', 0)), $token);
 }
 
 it('queries the GitHub API with affects containing ONLY the package name', function () {
@@ -16,7 +17,7 @@ it('queries the GitHub API with affects containing ONLY the package name', funct
         'api.github.com/advisories*' => Http::response([]),
     ]);
 
-    (new AdvisoryClient(noCache()))->forName('guzzlehttp/guzzle', Ecosystem::Composer);
+    advisoryClient()->forName('guzzlehttp/guzzle', Ecosystem::Composer);
 
     Http::assertSent(function ($request) {
         $query = parse_url($request->url(), PHP_URL_QUERY);
@@ -54,7 +55,7 @@ it('parses advisories and filters vulnerabilities by package name', function () 
         ]),
     ]);
 
-    $result = (new AdvisoryClient(noCache()))->forName('guzzlehttp/guzzle', Ecosystem::Composer);
+    $result = advisoryClient()->forName('guzzlehttp/guzzle', Ecosystem::Composer);
     $advisories = $result->advisories;
 
     expect($result->failed)->toBeFalse()
@@ -71,7 +72,7 @@ it('parses advisories and filters vulnerabilities by package name', function () 
 it('sends the Authorization header when a token is provided', function () {
     Http::fake(['api.github.com/advisories*' => Http::response([])]);
 
-    (new AdvisoryClient(noCache(), 'secret-token'))->forName('acme/lib', Ecosystem::Composer);
+    advisoryClient('secret-token')->forName('acme/lib', Ecosystem::Composer);
 
     Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer secret-token'));
 });
@@ -81,7 +82,7 @@ it('flags a rate-limited lookup as failed instead of empty', function () {
         'api.github.com/advisories*' => Http::response('', 403, ['X-RateLimit-Remaining' => '0']),
     ]);
 
-    $result = (new AdvisoryClient(noCache()))->forName('acme/lib', Ecosystem::Composer);
+    $result = advisoryClient()->forName('acme/lib', Ecosystem::Composer);
 
     expect($result->failed)->toBeTrue()
         ->and($result->advisories)->toBeEmpty()
@@ -91,5 +92,5 @@ it('flags a rate-limited lookup as failed instead of empty', function () {
 it('flags a server error as a failed lookup', function () {
     Http::fake(['api.github.com/advisories*' => Http::response('', 500)]);
 
-    expect((new AdvisoryClient(noCache()))->forName('acme/lib', Ecosystem::Composer)->failed)->toBeTrue();
+    expect(advisoryClient()->forName('acme/lib', Ecosystem::Composer)->failed)->toBeTrue();
 });

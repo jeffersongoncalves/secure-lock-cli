@@ -1,12 +1,13 @@
 <?php
 
+use App\Services\HttpFetcher;
 use App\Services\RegistryClient;
 use App\Support\HttpCache;
 use Illuminate\Support\Facades\Http;
 
-function freshCache(): HttpCache
+function registry(): RegistryClient
 {
-    return new HttpCache(sys_get_temp_dir().'/secure-lock-test', 0);
+    return new RegistryClient(new HttpFetcher(new HttpCache(sys_get_temp_dir().'/secure-lock-test', 0)));
 }
 
 it('ignores Composer pre-releases when resolving the latest stable version', function () {
@@ -24,7 +25,7 @@ it('ignores Composer pre-releases when resolving the latest stable version', fun
         ]),
     ]);
 
-    expect((new RegistryClient(freshCache()))->latestComposer('guzzlehttp/guzzle'))->toBe('7.10.0');
+    expect(registry()->latestComposer('guzzlehttp/guzzle'))->toBe('7.10.0');
 });
 
 it('uses dist-tags.latest for npm packages', function () {
@@ -34,7 +35,7 @@ it('uses dist-tags.latest for npm packages', function () {
         ]),
     ]);
 
-    expect((new RegistryClient(freshCache()))->latestNpm('lodash'))->toBe('4.17.21');
+    expect(registry()->latestNpm('lodash'))->toBe('4.17.21');
 });
 
 it('encodes the scope separator for scoped npm packages', function () {
@@ -42,7 +43,7 @@ it('encodes the scope separator for scoped npm packages', function () {
         'registry.npmjs.org/*' => Http::response(['dist-tags' => ['latest' => '7.24.0']]),
     ]);
 
-    (new RegistryClient(freshCache()))->latestNpm('@babel/core');
+    registry()->latestNpm('@babel/core');
 
     Http::assertSent(fn ($request) => str_contains($request->url(), '%2F'));
 });

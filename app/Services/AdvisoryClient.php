@@ -8,10 +8,7 @@ use App\Enums\Ecosystem;
 use App\Enums\Severity;
 use App\Support\Advisory;
 use App\Support\AdvisoryResult;
-use App\Support\HttpCache;
 use App\Support\Package;
-use Illuminate\Support\Facades\Http;
-use Throwable;
 
 /**
  * Fetches advisories for a package from the GitHub Advisory Database.
@@ -23,9 +20,8 @@ final class AdvisoryClient
     private const MAX_PAGES = 10;
 
     public function __construct(
-        private readonly HttpCache $cache,
+        private readonly HttpFetcher $fetcher,
         private readonly ?string $token = null,
-        private readonly int $timeout = 15,
     ) {}
 
     public function forPackage(Package $package): AdvisoryResult
@@ -35,54 +31,107 @@ final class AdvisoryClient
 
     public function forName(string $name, Ecosystem $ecosystem): AdvisoryResult
     {
-        $advisories = [];
+        $first = $this->fetcher->fetch($this->url($name, $ecosystem, 1), $this->headers());
 
-        // Follow pagination so packages with >100 advisories are not silently
-        // truncated. Stop on the first page whose lookup fails.
-        for ($page = 1; $page <= self::MAX_PAGES; $page++) {
-            // CRITICAL: "affects" takes ONLY the package name. Prefixing it
-            // with the ecosystem (e.g. "composer:guzzlehttp/guzzle") returns
-            // 200 with an empty list. The ecosystem goes in its own parameter.
-            $url = 'https://api.github.com/advisories?'.http_build_query([
-                'affects' => $name,
-                'ecosystem' => $ecosystem->advisoryName(),
-                'per_page' => self::PER_PAGE,
-                'page' => $page,
-            ]);
+        return $this->collect($name, $ecosystem, $first, fromPage: 2);
+    }
 
-            $response = $this->get($url);
+    /**
+     * Continue collecting from an already-fetched first page (used by the
+     * batch path, which pools every package's first page concurrently).
+     *
+     * @param  array{failed: bool, data: array<mixed>|null, reason: ?string}  $first
+     */
+    public function collect(string $name, Ecosystem $ecosystem, array $first, int $fromPage): AdvisoryResult
+    {
+        if ($first['failed']) {
+            return new AdvisoryResult([], failed: true, reason: $first['reason']);
+        }
 
-            if ($response['failed']) {
-                // A failed lookup means the security status is unknown — never
-                // report it as "no advisories found".
-                return new AdvisoryResult($advisories, failed: true, reason: $response['reason']);
-            }
+        $advisories = $this->parsePage($first['data'], $name, $ecosystem);
 
-            $data = $response['data'];
+        // Only paginate when the first page came back full.
+        if ($this->isFullPage($first['data'])) {
+            for ($page = $fromPage; $page <= self::MAX_PAGES; $page++) {
+                $outcome = $this->fetcher->fetch($this->url($name, $ecosystem, $page), $this->headers());
 
-            if (! is_array($data) || $data === []) {
-                break;
-            }
-
-            foreach ($data as $entry) {
-                if (! is_array($entry)) {
-                    continue;
+                if ($outcome['failed']) {
+                    return new AdvisoryResult($advisories, failed: true, reason: $outcome['reason']);
                 }
 
-                $advisory = $this->makeAdvisory($entry, $name, $ecosystem);
+                $advisories = [...$advisories, ...$this->parsePage($outcome['data'], $name, $ecosystem)];
 
-                if ($advisory !== null) {
-                    $advisories[] = $advisory;
+                if (! $this->isFullPage($outcome['data'])) {
+                    break;
                 }
-            }
-
-            // Last page reached when fewer than a full page came back.
-            if (count($data) < self::PER_PAGE) {
-                break;
             }
         }
 
         return new AdvisoryResult($advisories);
+    }
+
+    /**
+     * CRITICAL: "affects" takes ONLY the package name. Prefixing it with the
+     * ecosystem (e.g. "composer:guzzlehttp/guzzle") returns 200 with an empty
+     * list. The ecosystem goes in its own parameter.
+     */
+    public function url(string $name, Ecosystem $ecosystem, int $page = 1): string
+    {
+        return 'https://api.github.com/advisories?'.http_build_query([
+            'affects' => $name,
+            'ecosystem' => $ecosystem->advisoryName(),
+            'per_page' => self::PER_PAGE,
+            'page' => $page,
+        ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function headers(): array
+    {
+        $headers = ['Accept' => 'application/vnd.github+json'];
+
+        if ($this->token !== null && $this->token !== '') {
+            $headers['Authorization'] = 'Bearer '.$this->token;
+        }
+
+        return $headers;
+    }
+
+    /**
+     * @param  array<mixed>|null  $data
+     * @return list<Advisory>
+     */
+    public function parsePage(?array $data, string $name, Ecosystem $ecosystem): array
+    {
+        if (! is_array($data)) {
+            return [];
+        }
+
+        $advisories = [];
+
+        foreach ($data as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $advisory = $this->makeAdvisory($entry, $name, $ecosystem);
+
+            if ($advisory !== null) {
+                $advisories[] = $advisory;
+            }
+        }
+
+        return $advisories;
+    }
+
+    /**
+     * @param  array<mixed>|null  $data
+     */
+    private function isFullPage(?array $data): bool
+    {
+        return is_array($data) && count($data) >= self::PER_PAGE;
     }
 
     /**
@@ -98,14 +147,13 @@ final class AdvisoryClient
                 continue;
             }
 
-            $package = $vulnerability['package'] ?? [];
-            $packageName = is_array($package) ? ($package['name'] ?? null) : null;
+            $package = $vulnerability['package'] ?? null;
 
-            if ($packageName !== $name) {
+            if (! is_array($package) || ($package['name'] ?? null) !== $name) {
                 continue;
             }
 
-            $packageEcosystem = is_array($package) ? ($package['ecosystem'] ?? null) : null;
+            $packageEcosystem = $package['ecosystem'] ?? null;
 
             if (is_string($packageEcosystem) && strtolower($packageEcosystem) !== $ecosystem->advisoryName()) {
                 continue;
@@ -142,58 +190,5 @@ final class AdvisoryClient
             cve: is_string($entry['cve_id'] ?? null) ? $entry['cve_id'] : null,
             link: is_string($entry['html_url'] ?? null) ? $entry['html_url'] : null,
         );
-    }
-
-    /**
-     * @return array{failed: bool, data: array<int, mixed>|null, reason: ?string}
-     */
-    private function get(string $url): array
-    {
-        /** @var array{failed: bool, data: array<int, mixed>|null, reason: ?string} $result */
-        $result = $this->cache->remember(
-            $url,
-            function () use ($url): array {
-                try {
-                    $response = Http::timeout($this->timeout)
-                        ->retry(2, 200, throw: false)
-                        ->withHeaders($this->headers())
-                        ->get($url);
-                } catch (Throwable $e) {
-                    return ['failed' => true, 'data' => null, 'reason' => $e->getMessage()];
-                }
-
-                // Rate limit: GitHub returns 403/429 with no remaining quota.
-                if (in_array($response->status(), [403, 429], true)
-                    && (string) $response->header('X-RateLimit-Remaining') === '0') {
-                    return ['failed' => true, 'data' => null, 'reason' => 'GitHub API rate limit exceeded'];
-                }
-
-                if (! $response->successful()) {
-                    return ['failed' => true, 'data' => null, 'reason' => 'HTTP '.$response->status()];
-                }
-
-                $json = $response->json();
-
-                return ['failed' => false, 'data' => is_array($json) ? $json : [], 'reason' => null];
-            },
-            // Never cache a failed lookup — it should be retried next run.
-            fn (array $value): bool => $value['failed'] === false,
-        );
-
-        return $result;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function headers(): array
-    {
-        $headers = ['Accept' => 'application/vnd.github+json'];
-
-        if ($this->token !== null && $this->token !== '') {
-            $headers['Authorization'] = 'Bearer '.$this->token;
-        }
-
-        return $headers;
     }
 }

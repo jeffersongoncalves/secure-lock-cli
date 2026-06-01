@@ -71,7 +71,7 @@ final class LockReader
     }
 
     /**
-     * @param  array<string, mixed>  $packagesMap
+     * @param  array<array-key, mixed>  $packagesMap
      * @return list<Package>
      */
     private function readNpmPackagesMap(array $packagesMap): array
@@ -123,7 +123,7 @@ final class LockReader
     }
 
     /**
-     * @param  array<string, mixed>  $dependencies
+     * @param  array<array-key, mixed>  $dependencies
      * @param  array<string, Package>  $packages
      */
     private function collectNpmV1(array $dependencies, array &$packages): void

@@ -49,6 +49,36 @@ final class HttpCache
     }
 
     /**
+     * Look up a key without computing a value.
+     *
+     * @return array{hit: bool, value: mixed}
+     */
+    public function peek(string $key): array
+    {
+        if ($this->ttl <= 0) {
+            return ['hit' => false, 'value' => null];
+        }
+
+        $cached = $this->get($key);
+
+        return $cached === null
+            ? ['hit' => false, 'value' => null]
+            : ['hit' => true, 'value' => $cached['value']];
+    }
+
+    /**
+     * Store a value under a key (no-op when caching is disabled).
+     */
+    public function store(string $key, mixed $value): void
+    {
+        if ($this->ttl <= 0) {
+            return;
+        }
+
+        $this->put($key, $value);
+    }
+
+    /**
      * @return array{value: mixed}|null
      */
     private function get(string $key): ?array
@@ -65,7 +95,6 @@ final class HttpCache
             return null;
         }
 
-        /** @var array{expires: int, value: mixed}|null $payload */
         $payload = json_decode($raw, true);
 
         if (! is_array($payload) || ! isset($payload['expires'])) {

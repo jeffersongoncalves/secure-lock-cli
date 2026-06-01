@@ -8,6 +8,7 @@ use App\Enums\Verdict;
 use App\Services\AdvisoryClient;
 use App\Services\Auditor;
 use App\Services\Fixer;
+use App\Services\HttpFetcher;
 use App\Services\LockReader;
 use App\Services\RegistryClient;
 use App\Services\SarifReporter;
@@ -103,6 +104,7 @@ class AuditCommand extends Command
                 'pnpm' => $reader->readPnpm($path),
                 'bun' => $reader->readBun($path),
                 'yarn' => $reader->readYarn($path),
+                default => [],
             }];
         }
 
@@ -186,11 +188,12 @@ class AuditCommand extends Command
             $token = getenv('GITHUB_TOKEN') ?: null;
         }
 
-        $cache = new HttpCache($this->cacheDirectory(), $ttl);
+        $fetcher = new HttpFetcher(new HttpCache($this->cacheDirectory(), $ttl));
 
         return new Auditor(
-            new RegistryClient($cache),
-            new AdvisoryClient($cache, is_string($token) ? $token : null),
+            new RegistryClient($fetcher),
+            new AdvisoryClient($fetcher, is_string($token) ? $token : null),
+            $fetcher,
         );
     }
 
@@ -231,7 +234,6 @@ class AuditCommand extends Command
      */
     private function buildIgnoreList(): IgnoreList
     {
-        /** @var list<string> $flags */
         $flags = (array) $this->option('ignore');
         $entries = array_values(array_filter($flags, fn ($v): bool => is_string($v) && $v !== ''));
 

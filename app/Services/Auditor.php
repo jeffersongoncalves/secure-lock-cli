@@ -13,13 +13,15 @@ use Closure;
 
 /**
  * Orchestrates the audit: enriches each package with its latest version and
- * advisories, then classifies it into a verdict.
+ * advisories, then classifies it into a verdict. Registry and advisory
+ * lookups for every package are fired concurrently in one wave.
  */
 final class Auditor
 {
     public function __construct(
         private readonly RegistryClient $registry,
         private readonly AdvisoryClient $advisories,
+        private readonly HttpFetcher $fetcher,
     ) {}
 
     /**
@@ -30,15 +32,27 @@ final class Auditor
     public function run(array $packages, ?IgnoreList $ignore = null, ?Closure $onProgress = null): array
     {
         $ignore ??= IgnoreList::empty();
+
+        // One concurrent wave for every package's registry + first advisory page.
+        $requests = [];
+
+        foreach ($packages as $i => $package) {
+            $requests["reg:$i"] = ['url' => $this->registry->url($package), 'headers' => ['Accept' => 'application/json']];
+            $requests["adv:$i"] = ['url' => $this->advisories->url($package->name, $package->ecosystem, 1), 'headers' => $this->advisories->headers()];
+        }
+
+        $outcomes = $this->fetcher->many($requests);
+
         $results = [];
 
-        foreach ($packages as $package) {
-            $package->latest = $this->registry->latest($package);
+        foreach ($packages as $i => $package) {
+            $package->latest = $this->registry->extractLatest($package, $outcomes["reg:$i"]);
 
-            $lookup = $this->advisories->forPackage($package);
+            // Resume advisory collection from the pooled first page (paginates
+            // sequentially only for the rare package with >100 advisories).
+            $lookup = $this->advisories->collect($package->name, $package->ecosystem, $outcomes["adv:$i"], fromPage: 2);
             $package->advisoriesFailed = $lookup->failed;
 
-            // Suppress accepted/ignored advisories before classifying.
             $package->advisories = $ignore->isEmpty()
                 ? $lookup->advisories
                 : array_values(array_filter(

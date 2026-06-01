@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\Ecosystem;
-use App\Support\HttpCache;
 use App\Support\Package;
 use App\Support\Version;
-use Illuminate\Support\Facades\Http;
-use Throwable;
 
 /**
  * Resolves the latest stable version of a package from its registry.
@@ -19,28 +16,63 @@ final class RegistryClient
     private const PRERELEASE = '/(alpha|beta|rc|dev|next|canary|nightly)/i';
 
     public function __construct(
-        private readonly HttpCache $cache,
-        private readonly int $timeout = 15,
+        private readonly HttpFetcher $fetcher,
     ) {}
 
     public function latest(Package $package): ?string
     {
-        return match ($package->ecosystem) {
-            Ecosystem::Composer => $this->latestComposer($package->name),
-            Ecosystem::Npm => $this->latestNpm($package->name),
-        };
+        $outcome = $this->fetcher->fetch($this->url($package), ['Accept' => 'application/json']);
+
+        return $this->extractLatest($package, $outcome);
     }
 
     public function latestComposer(string $name): ?string
     {
-        $data = $this->get("https://repo.packagist.org/p2/{$name}.json");
+        return $this->latest(new Package($name, '0.0.0', Ecosystem::Composer));
+    }
 
-        if (! is_array($data)) {
+    public function latestNpm(string $name): ?string
+    {
+        return $this->latest(new Package($name, '0.0.0', Ecosystem::Npm));
+    }
+
+    /**
+     * The registry URL for a package (used by the batch path).
+     */
+    public function url(Package $package): string
+    {
+        return match ($package->ecosystem) {
+            Ecosystem::Composer => "https://repo.packagist.org/p2/{$package->name}.json",
+            // Encode the scope separator for scoped packages (@scope/pkg).
+            Ecosystem::Npm => 'https://registry.npmjs.org/'.str_replace('/', '%2F', $package->name),
+        };
+    }
+
+    /**
+     * @param  array{failed: bool, data: array<mixed>|null, reason: ?string}  $outcome
+     */
+    public function extractLatest(Package $package, array $outcome): ?string
+    {
+        if ($outcome['failed'] || ! is_array($outcome['data'])) {
             return null;
         }
 
-        /** @var array<int, array<string, mixed>> $versions */
+        return match ($package->ecosystem) {
+            Ecosystem::Composer => $this->parseComposer($package->name, $outcome['data']),
+            Ecosystem::Npm => $this->parseNpm($outcome['data']),
+        };
+    }
+
+    /**
+     * @param  array<mixed>  $data
+     */
+    private function parseComposer(string $name, array $data): ?string
+    {
         $versions = $data['packages'][$name] ?? [];
+
+        if (! is_array($versions)) {
+            return null;
+        }
 
         $best = null;
 
@@ -61,17 +93,11 @@ final class RegistryClient
         return $best;
     }
 
-    public function latestNpm(string $name): ?string
+    /**
+     * @param  array<mixed>  $data
+     */
+    private function parseNpm(array $data): ?string
     {
-        // Encode the scope separator for scoped packages (@scope/pkg).
-        $encoded = str_replace('/', '%2F', $name);
-
-        $data = $this->get("https://registry.npmjs.org/{$encoded}");
-
-        if (! is_array($data)) {
-            return null;
-        }
-
         $latest = $data['dist-tags']['latest'] ?? null;
 
         return is_string($latest) && $latest !== '' ? Version::normalize($latest) : null;
@@ -80,32 +106,5 @@ final class RegistryClient
     private function isStable(string $version): bool
     {
         return preg_match(self::PRERELEASE, $version) !== 1;
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function get(string $url): ?array
-    {
-        $result = $this->cache->remember($url, function () use ($url): ?array {
-            try {
-                $response = Http::timeout($this->timeout)
-                    ->retry(2, 200, throw: false)
-                    ->acceptJson()
-                    ->get($url);
-            } catch (Throwable) {
-                return null;
-            }
-
-            if (! $response->successful()) {
-                return null;
-            }
-
-            $json = $response->json();
-
-            return is_array($json) ? $json : null;
-        });
-
-        return is_array($result) ? $result : null;
     }
 }

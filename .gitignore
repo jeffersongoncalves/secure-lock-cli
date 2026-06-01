@@ -4,6 +4,7 @@
 /.vagrant
 .phpunit.result.cache
 .phpunit.cache
+.phpstan.cache
 .env
 /.claude/settings.local.json
 /tests/tmp

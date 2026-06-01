@@ -5,6 +5,7 @@ use App\Enums\Severity;
 use App\Services\AdvisoryClient;
 use App\Services\Auditor;
 use App\Services\Fixer;
+use App\Services\HttpFetcher;
 use App\Services\RegistryClient;
 use App\Support\Advisory;
 use App\Support\AuditResult;
@@ -13,11 +14,12 @@ use App\Support\Package;
 
 function classify(Package $package): AuditResult
 {
-    $cache = new HttpCache(sys_get_temp_dir().'/secure-lock-test', 0);
+    $fetcher = new HttpFetcher(new HttpCache(sys_get_temp_dir().'/secure-lock-test', 0));
 
     return (new Auditor(
-        new RegistryClient($cache),
-        new AdvisoryClient($cache),
+        new RegistryClient($fetcher),
+        new AdvisoryClient($fetcher),
+        $fetcher,
     ))->classify($package);
 }
 
