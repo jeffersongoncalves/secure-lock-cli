@@ -2,6 +2,24 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.7.1 - 2026-06-01
+
+Resilience fix for large projects.
+
+### Fixed
+
+- On a large project (hundreds of npm packages) the single npm-audit bulk request could fail as a whole — e.g. throttled after the big lookup burst — leaving **every** JS package `UNKNOWN` while Composer (a different host) recovered. The npm and Packagist advisory fallbacks now split into **batches of 80**: one failed batch no longer drags down the rest, and each request stays small enough to avoid size/rate thresholds.
+
+### Tip
+
+For large projects, set a `GITHUB_TOKEN` to skip the rate-limited fallback path entirely (5000 req/h vs ~60).
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.7.0 - 2026-06-01
 
 Token-free audits for every ecosystem.
@@ -14,6 +32,7 @@ Token-free audits for every ecosystem.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 ```
 ## 1.6.0 - 2026-06-01
@@ -30,6 +49,7 @@ Transitive-aware fixes.
 composer global require jeffersongoncalves/secure-lock-cli
 
 
+
 ```
 ## 1.5.0 - 2026-06-01
 
@@ -43,6 +63,7 @@ Reliability for Composer without a token.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -69,6 +90,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.3.0 - 2026-06-01
 
@@ -84,6 +106,7 @@ Reliability, CI control and GitHub integration.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -110,6 +133,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.2.0 - 2026-06-01
 
@@ -122,6 +146,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -153,6 +178,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -166,6 +192,7 @@ No changes to the audit behavior.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -198,6 +225,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.0 - 2026-06-01
 
@@ -217,6 +245,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
