@@ -1,3 +1,9 @@
+<div class="filament-hidden">
+
+![Secure Lock CLI](https://raw.githubusercontent.com/jeffersongoncalves/secure-lock-cli/main/art/jeffersongoncalves-secure-lock-cli.png)
+
+</div>
+
 # secure-lock-cli
 
 `secure-lock` audits a project's dependencies and answers three questions

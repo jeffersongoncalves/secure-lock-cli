@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A0A0B"/>
+      <stop offset="1" stop-color="#18181B"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FBBF24"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop stop-color="#FBBF24" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#FBBF24" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#27272A" stroke-width="0.6"/>
+    </pattern>
+  </defs>
+
+  <!-- Backgrounds -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.4"/>
+  <ellipse cx="950" cy="310" rx="410" ry="290" fill="url(#glow)"/>
+
+  <!-- Top label -->
+  <circle cx="84" cy="66" r="4" fill="#FBBF24"/>
+  <text x="100" y="71" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="500" letter-spacing="2" fill="#A1A1AA">CLI TOOL</text>
+
+  <!-- Title -->
+  <text x="80" y="270" font-family="Inter, system-ui, sans-serif" font-size="76" font-weight="800" letter-spacing="-2" fill="#FAFAFA">Secure Lock</text>
+
+  <!-- Tagline -->
+  <text x="82" y="326" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="#FBBF24">Audit dependencies for safe updates</text>
+
+  <!-- Description -->
+  <text x="82" y="370" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="400" fill="#A1A1AA">Checks Composer &amp; npm packages against known advisories</text>
+  <text x="82" y="394" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="400" fill="#A1A1AA">and tells if an update really leaves the vulnerable range.</text>
+
+  <!-- Footer pills -->
+  <g font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="500" fill="#FAFAFA">
+    <rect x="80" y="545" width="88" height="30" rx="15" fill="#18181B" stroke="#27272A"/>
+    <text x="124" y="565" text-anchor="middle">PHP 8.2</text>
+    <rect x="176" y="545" width="124" height="30" rx="15" fill="#18181B" stroke="#27272A"/>
+    <text x="238" y="565" text-anchor="middle">Laravel Zero</text>
+    <rect x="308" y="545" width="92" height="30" rx="15" fill="#18181B" stroke="#27272A"/>
+    <text x="354" y="565" text-anchor="middle">Security</text>
+    <rect x="408" y="545" width="56" height="30" rx="15" fill="#18181B" stroke="#27272A"/>
+    <text x="436" y="565" text-anchor="middle">MIT</text>
+  </g>
+
+  <!-- Username -->
+  <text x="1120" y="595" text-anchor="end" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="500" fill="#52525B">@jeffersongoncalves</text>
+
+  <!-- Terminal window -->
+  <g>
+    <rect x="680" y="135" width="460" height="360" rx="12" fill="#18181B" stroke="#3F3F46"/>
+    <!-- title bar -->
+    <rect x="680" y="135" width="460" height="40" rx="12" fill="#0A0A0B"/>
+    <rect x="680" y="160" width="460" height="15" fill="#0A0A0B"/>
+    <circle cx="704" cy="155" r="6" fill="#EF4444"/>
+    <circle cx="724" cy="155" r="6" fill="#FBBF24"/>
+    <circle cx="744" cy="155" r="6" fill="#10B981"/>
+    <text x="910" y="160" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#52525B" letter-spacing="2">terminal</text>
+
+    <!-- body -->
+    <g font-family="ui-monospace, monospace" font-size="14.5">
+      <text x="704" y="210"><tspan fill="#F59E0B">$</tspan><tspan fill="#FAFAFA"> secure-lock audit</tspan></text>
+
+      <text x="704" y="248"><tspan fill="#EF4444">● VULN  </tspan><tspan fill="#A1A1AA">acme/legacy   no fix</tspan></text>
+      <text x="704" y="276"><tspan fill="#10B981">● SAFE  </tspan><tspan fill="#A1A1AA">guzzlehttp/guzzle</tspan></text>
+      <text x="724" y="298"><tspan fill="#71717A">6.5.0 → 7.10.5</tspan></text>
+      <text x="704" y="326"><tspan fill="#FBBF24">● RISKY </tspan><tspan fill="#A1A1AA">npm/marked   stays exposed</tspan></text>
+      <text x="704" y="354"><tspan fill="#22D3EE">● UPDATE</tspan><tspan fill="#A1A1AA"> monolog/monolog</tspan></text>
+      <text x="704" y="382"><tspan fill="#52525B">● OK    symfony/console</tspan></text>
+
+      <text x="704" y="430"><tspan fill="#FAFAFA">2 at risk</tspan><tspan fill="#71717A"> · 1 safe update available</tspan></text>
+      <text x="704" y="458"><tspan fill="#F59E0B">exit 1</tspan><tspan fill="#52525B">  (fails CI)</tspan></text>
+    </g>
+  </g>
+</svg>
