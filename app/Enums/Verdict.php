@@ -19,8 +19,8 @@ enum Verdict: string
     {
         return match ($this) {
             self::Vuln => '<fg=red>● VULN</>',
-            self::RiskyUpdate => '<fg=magenta>● RISCO</>',
-            self::SafeUpdate => '<fg=green>● SEGURO</>',
+            self::RiskyUpdate => '<fg=magenta>● RISKY</>',
+            self::SafeUpdate => '<fg=green>● SAFE</>',
             self::Update => '<fg=cyan>● UPDATE</>',
             self::Ok => '<fg=gray>● OK</>',
         };
@@ -29,11 +29,11 @@ enum Verdict: string
     public function label(): string
     {
         return match ($this) {
-            self::Vuln => 'vulnerável agora',
-            self::RiskyUpdate => 'update arriscado',
-            self::SafeUpdate => 'update seguro',
-            self::Update => 'update disponível',
-            self::Ok => 'atualizado e seguro',
+            self::Vuln => 'vulnerable now',
+            self::RiskyUpdate => 'risky update',
+            self::SafeUpdate => 'safe update',
+            self::Update => 'update available',
+            self::Ok => 'up to date',
         };
     }
 

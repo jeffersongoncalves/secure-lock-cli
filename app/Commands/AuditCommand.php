@@ -248,7 +248,7 @@ class AuditCommand extends Command
         }
 
         $this->table(
-            ['STATUS', 'ECO', 'PACOTE', 'ATUAL', 'ÚLTIMA', 'OBSERVAÇÃO'],
+            ['STATUS', 'ECO', 'PACKAGE', 'CURRENT', 'LATEST', 'NOTE'],
             $rows,
         );
     }
@@ -258,7 +258,7 @@ class AuditCommand extends Command
         $advisory = $result->topAdvisory();
 
         if ($advisory === null) {
-            return $result->package->hasUpdate() ? 'update disponível' : '-';
+            return $result->package->hasUpdate() ? 'update available' : '-';
         }
 
         $extra = count($result->relevantAdvisories()) - 1;
@@ -291,7 +291,7 @@ class AuditCommand extends Command
 
         $this->newLine();
         $this->line(sprintf(
-            '  <fg=red>%d vulneráveis agora</>  ·  <fg=magenta>%d update arriscado</>  ·  <fg=green>%d update seguro</>  ·  <fg=cyan>%d update disponível</>  ·  <fg=gray>%d atualizado e seguro</>',
+            '  <fg=red>%d vulnerable now</>  ·  <fg=magenta>%d risky update</>  ·  <fg=green>%d safe update</>  ·  <fg=cyan>%d update available</>  ·  <fg=gray>%d up to date</>',
             $counts[Verdict::Vuln->value],
             $counts[Verdict::RiskyUpdate->value],
             $counts[Verdict::SafeUpdate->value],
@@ -350,12 +350,12 @@ class AuditCommand extends Command
         $this->newLine();
 
         if ($commands === []) {
-            $this->components->info('Nenhuma correção automática disponível.');
+            $this->components->info('No automatic fix available.');
 
             return;
         }
 
-        $this->line('  <fg=yellow;options=bold>Correções sugeridas:</>');
+        $this->line('  <fg=yellow;options=bold>Suggested fixes:</>');
         $this->newLine();
 
         foreach ($commands as $command) {

@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="927" height="602" viewBox="0 0 927 602">
+<rect width="927" height="602" rx="12" fill="#0D1117"/>
+<rect width="927" height="44" rx="12" fill="#161B22"/>
+<rect y="32" width="927" height="12" fill="#161B22"/>
+<circle cx="24" cy="22" r="6" fill="#F85149"/>
+<circle cx="44" cy="22" r="6" fill="#D29922"/>
+<circle cx="64" cy="22" r="6" fill="#3FB950"/>
+<text x="463" y="27" text-anchor="middle" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="13" fill="#8B949E">secure-lock audit --fix</text>
+<text x="26" y="85.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">+----------+----------+---------------------+---------+---------+-------------------------------+</tspan>
+</text>
+<text x="26" y="107.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">|</tspan>
+<tspan fill="#3FB950"> STATUS   </tspan>
+<tspan fill="#E6EDF3">|</tspan>
+<tspan fill="#3FB950"> ECO      </tspan>
+<tspan fill="#E6EDF3">|</tspan>
+<tspan fill="#3FB950"> PACKAGE             </tspan>
+<tspan fill="#E6EDF3">|</tspan>
+<tspan fill="#3FB950"> CURRENT </tspan>
+<tspan fill="#E6EDF3">|</tspan>
+<tspan fill="#3FB950"> LATEST  </tspan>
+<tspan fill="#E6EDF3">|</tspan>
+<tspan fill="#3FB950"> NOTE                          </tspan>
+<tspan fill="#E6EDF3">|</tspan>
+</text>
+<text x="26" y="129.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">+----------+----------+---------------------+---------+---------+-------------------------------+</tspan>
+</text>
+<text x="26" y="151.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">| </tspan>
+<tspan fill="#3FB950">● SAFE</tspan>
+<tspan fill="#E6EDF3">   | npm      | axios               | 1.6.0   | 1.16.1  | HIGH CVE-2026-44495 (+22)     |</tspan>
+</text>
+<text x="26" y="173.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">| </tspan>
+<tspan fill="#3FB950">● SAFE</tspan>
+<tspan fill="#E6EDF3">   | composer | guzzlehttp/guzzle   | 6.5.0   | 7.10.5  | HIGH CVE-2022-31091 (+4)      |</tspan>
+</text>
+<text x="26" y="195.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">| </tspan>
+<tspan fill="#3FB950">● SAFE</tspan>
+<tspan fill="#E6EDF3">   | npm      | lodash              | 4.17.4  | 4.18.1  | CRITICAL CVE-2019-10744 (+10) |</tspan>
+</text>
+<text x="26" y="217.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">| </tspan>
+<tspan fill="#3FB950">● SAFE</tspan>
+<tspan fill="#E6EDF3">   | npm      | marked              | 0.3.6   | 18.0.4  | HIGH CVE-2022-21681 (+7)      |</tspan>
+</text>
+<text x="26" y="239.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">| </tspan>
+<tspan fill="#3FB950">● SAFE</tspan>
+<tspan fill="#E6EDF3">   | composer | phpunit/phpunit     | 9.5.0   | 13.1.13 | HIGH CVE-2026-24765           |</tspan>
+</text>
+<text x="26" y="261.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">| </tspan>
+<tspan fill="#3FB950">● SAFE</tspan>
+<tspan fill="#E6EDF3">   | composer | symfony/http-kernel | 4.4.0   | 8.1.0   | HIGH CVE-2020-15094 (+1)      |</tspan>
+</text>
+<text x="26" y="283.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">| </tspan>
+<tspan fill="#56D4DD">● UPDATE</tspan>
+<tspan fill="#E6EDF3"> | composer | psr/log             | 3.0.0   | 3.0.2   | update available              |</tspan>
+</text>
+<text x="26" y="305.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">+----------+----------+---------------------+---------+---------+-------------------------------+</tspan>
+</text>
+<text x="26" y="327.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+</text>
+<text x="26" y="349.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#F85149">0 vulnerable now</tspan>
+<tspan fill="#E6EDF3">  ·  </tspan>
+<tspan fill="#D2A8FF">0 risky update</tspan>
+<tspan fill="#E6EDF3">  ·  </tspan>
+<tspan fill="#3FB950">6 safe update</tspan>
+<tspan fill="#E6EDF3">  ·  </tspan>
+<tspan fill="#56D4DD">1 update available</tspan>
+<tspan fill="#E6EDF3">  ·  </tspan>
+<tspan fill="#8B949E">0 up to date</tspan>
+</text>
+<text x="26" y="371.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+</text>
+<text x="26" y="393.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+</text>
+<text x="26" y="415.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#D29922">Suggested fixes:</tspan>
+</text>
+<text x="26" y="437.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+</text>
+<text x="26" y="459.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#3FB950">npm install axios@1.16.0</tspan>
+</text>
+<text x="26" y="481.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#3FB950">composer require guzzlehttp/guzzle:^6.5.8</tspan>
+</text>
+<text x="26" y="503.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#3FB950">npm install lodash@4.18.0</tspan>
+</text>
+<text x="26" y="525.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#3FB950">npm install marked@4.0.10</tspan>
+</text>
+<text x="26" y="547.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#3FB950">composer require phpunit/phpunit:^9.6.33</tspan>
+</text>
+<text x="26" y="569.0" font-family="Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace" font-size="15.0" xml:space="preserve">
+<tspan fill="#E6EDF3">  </tspan>
+<tspan fill="#3FB950">composer require symfony/http-kernel:^4.4.50</tspan>
+</text>
+</svg>

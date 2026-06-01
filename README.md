@@ -28,6 +28,12 @@ advisories and the registry are resolved against the shared npm ecosystem.
 Built with [Laravel Zero](https://laravel-zero.com) and modeled on the
 other CLIs in this monorepo.
 
+![secure-lock audit](https://raw.githubusercontent.com/jeffersongoncalves/secure-lock-cli/main/art/screenshot-audit.png)
+
+Every package is checked against the registry and the GitHub Advisory
+Database, then classified — here six packages have a published fix (`SAFE`)
+and one only has a newer release (`UPDATE`).
+
 ## Requirements
 
 - PHP `^8.2`
@@ -94,13 +100,13 @@ version against those still hitting the **latest** version:
 | Verdict | Badge | Meaning |
 |---------|-------|---------|
 | `VULN` | `● VULN` (red) | vulnerable now, no published fix |
-| `SAFE_UPDATE` | `● SEGURO` (green) | the update **fixes** the vulnerability |
-| `RISKY_UPDATE` | `● RISCO` (magenta) | an update exists but stays exposed |
+| `SAFE_UPDATE` | `● SAFE` (green) | the update **fixes** the vulnerability |
+| `RISKY_UPDATE` | `● RISKY` (magenta) | an update exists but stays exposed |
 | `UPDATE` | `● UPDATE` (cyan) | newer version, no known vulnerability |
 | `OK` | `● OK` (gray) | up to date and clean |
 
-The table is sorted by risk (`VULN` > `RISCO` > `SEGURO` > `UPDATE` > `OK`)
-and the `OBSERVAÇÃO` column shows the highest-severity advisory as
+The table is sorted by risk (`VULN` > `RISKY` > `SAFE` > `UPDATE` > `OK`)
+and the `NOTE` column shows the highest-severity advisory as
 `SEVERITY CVE-XXXX (+N)` (the CVE when present, otherwise the GHSA id).
 
 ## Fixing
@@ -111,14 +117,10 @@ than the installed one that escapes *every* vulnerable range (computed from the
 advisories' patched versions and the latest release), so the bump is minimal
 and verified — not just "the newest":
 
-```bash
-$ secure-lock --fix
-...
-  Correções sugeridas:
+![secure-lock audit --fix](https://raw.githubusercontent.com/jeffersongoncalves/secure-lock-cli/main/art/screenshot-fix.png)
 
-  composer require guzzlehttp/guzzle:^6.5.8
-  pnpm add marked@4.0.0
-```
+Note how the target is the *minimum* safe version, not the newest:
+`guzzlehttp/guzzle` goes to `6.5.8` (not `7.10.5`) and `phpunit` to `9.6.33`.
 
 Packages with no version that leaves the vulnerable range (`VULN`) are skipped.
 In `--json` mode each package gains a `fix` object (`{target, command}`) or
