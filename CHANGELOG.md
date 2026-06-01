@@ -2,6 +2,23 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.1.0 - 2026-06-01
+
+### Added
+
+- **pnpm** support — reads `pnpm-lock.yaml` (lockfileVersion 5/6/9), including scoped packages and peer-dependency suffixes.
+- **bun** support — reads the `bun.lock` text lockfile (JSONC). The binary `bun.lockb` is rejected with a hint to generate the text lockfile.
+- The `ECO` column (and a new JSON `manager` field) now show the real package manager a dependency came from: `composer`, `npm`, `pnpm` or `bun`.
+- Explicit `--pnpm` and `--bun` path flags, mirroring `--npm`. JS lockfiles are auto-detected in the project directory by priority (pnpm > bun > npm).
+
+All JavaScript managers resolve against the shared npm ecosystem, so advisory and registry lookups are unchanged.
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.0.2 - 2026-06-01
 
 ### Fixed
@@ -14,6 +31,7 @@ No changes to the audit behavior.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 ```
 ## 1.0.1 - 2026-06-01
@@ -28,6 +46,7 @@ No functional changes to the audit itself.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 ```
@@ -49,6 +68,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
