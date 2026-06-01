@@ -20,6 +20,13 @@ final class Package
      */
     public array $advisories = [];
 
+    /**
+     * True when the advisory lookup could not be completed (rate limit,
+     * network error). The package's security status is then unknown rather
+     * than clean.
+     */
+    public bool $advisoriesFailed = false;
+
     public function __construct(
         public readonly string $name,
         public readonly string $current,

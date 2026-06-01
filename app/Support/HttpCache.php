@@ -22,8 +22,12 @@ final class HttpCache
     /**
      * Return the cached value for $key, or compute it with $callback,
      * store it (when the TTL allows) and return it.
+     *
+     * $shouldCache, when given, decides whether the computed value is worth
+     * storing — used to avoid caching transient failures (e.g. a rate-limit
+     * response that should be retried on the next run).
      */
-    public function remember(string $key, Closure $callback): mixed
+    public function remember(string $key, Closure $callback, ?Closure $shouldCache = null): mixed
     {
         if ($this->ttl <= 0) {
             return $callback();
@@ -37,7 +41,9 @@ final class HttpCache
 
         $value = $callback();
 
-        $this->put($key, $value);
+        if ($shouldCache === null || $shouldCache($value) === true) {
+            $this->put($key, $value);
+        }
 
         return $value;
     }

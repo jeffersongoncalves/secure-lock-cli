@@ -17,6 +17,7 @@ final class AuditResult
         public readonly Verdict $verdict,
         public readonly array $vulnerabilitiesNow,
         public readonly array $vulnerabilitiesInLatest,
+        public readonly bool $unverified = false,
     ) {}
 
     /**
@@ -64,6 +65,7 @@ final class AuditResult
             'latest' => $this->package->latest,
             'dev' => $this->package->isDev,
             'verdict' => $this->verdict->value,
+            'unverified' => $this->unverified,
             'has_update' => $this->package->hasUpdate(),
             'vulnerabilities_now' => array_map(
                 fn (Advisory $a): array => $a->toArray(),

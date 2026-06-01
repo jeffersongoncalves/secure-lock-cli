@@ -74,3 +74,15 @@ it('classifies a clean package with a newer version as UPDATE', function () {
 
     expect(makeAuditor()->classify($package)->verdict)->toBe(Verdict::Update);
 });
+
+it('classifies a failed advisory lookup as UNKNOWN, never OK', function () {
+    $package = new Package('acme/lib', '1.0.0', Ecosystem::Composer);
+    $package->latest = '1.0.0';
+    $package->advisories = [];
+    $package->advisoriesFailed = true;
+
+    $result = makeAuditor()->classify($package);
+
+    expect($result->verdict)->toBe(Verdict::Unknown)
+        ->and($result->unverified)->toBeTrue();
+});

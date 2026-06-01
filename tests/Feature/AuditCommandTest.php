@@ -114,6 +114,62 @@ it('prints an upgrade command with --fix for a fixable vulnerability', function 
         ->assertExitCode(0);
 });
 
+it('suppresses an advisory passed via --ignore (turning VULN into OK)', function () {
+    Http::fake([
+        'repo.packagist.org/*' => Http::response([
+            'packages' => ['acme/lib' => [['version' => '1.0.0']]],
+        ]),
+        'api.github.com/advisories*' => Http::response([
+            [
+                'ghsa_id' => 'GHSA-vuln', 'cve_id' => null, 'summary' => 'No fix',
+                'severity' => 'critical', 'html_url' => 'https://example.test',
+                'vulnerabilities' => [[
+                    'package' => ['ecosystem' => 'composer', 'name' => 'acme/lib'],
+                    'vulnerable_version_range' => '<= 1.0.0', 'first_patched_version' => null,
+                ]],
+            ],
+        ]),
+    ]);
+
+    $path = writeTempLock('composer.lock', json_encode([
+        'packages' => [['name' => 'acme/lib', 'version' => '1.0.0']],
+    ]));
+
+    // Without --ignore this is VULN (exit 1); suppressing the GHSA makes it OK.
+    $this->artisan('audit', ['--composer' => $path, '--ignore' => ['GHSA-vuln'], '--cache-ttl' => 0])
+        ->assertExitCode(0);
+});
+
+it('marks a package UNVERIFIED when the advisory lookup is rate limited', function () {
+    Http::fake([
+        'repo.packagist.org/*' => Http::response(['packages' => ['acme/lib' => [['version' => '1.0.0']]]]),
+        'api.github.com/advisories*' => Http::response('', 403, ['X-RateLimit-Remaining' => '0']),
+    ]);
+
+    $path = writeTempLock('composer.lock', json_encode([
+        'packages' => [['name' => 'acme/lib', 'version' => '1.0.0']],
+    ]));
+
+    // Default: unverified does not fail CI...
+    $this->artisan('audit', ['--composer' => $path, '--cache-ttl' => 0])->assertExitCode(0);
+
+    // ...but --fail-on-unverified makes it exit 1.
+    $this->artisan('audit', ['--composer' => $path, '--fail-on-unverified' => true, '--cache-ttl' => 0])
+        ->assertExitCode(1);
+});
+
+it('emits SARIF output for a vulnerable package', function () {
+    fakeGuzzleSafeUpdate();
+
+    $path = writeTempLock('composer.lock', json_encode([
+        'packages' => [['name' => 'guzzlehttp/guzzle', 'version' => '6.5.0']],
+    ]));
+
+    $this->artisan('audit', ['--composer' => $path, '--sarif' => true, '--cache-ttl' => 0])
+        ->expectsOutputToContain('"version": "2.1.0"')
+        ->assertExitCode(0);
+});
+
 it('exits 2 when no lockfile is found', function () {
     $this->artisan('audit', ['--dir' => sys_get_temp_dir().'/secure-lock-empty-'.uniqid(), '--cache-ttl' => 0])
         ->assertExitCode(2);

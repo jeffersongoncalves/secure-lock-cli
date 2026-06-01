@@ -10,8 +10,10 @@ use App\Services\Auditor;
 use App\Services\Fixer;
 use App\Services\LockReader;
 use App\Services\RegistryClient;
+use App\Services\SarifReporter;
 use App\Support\AuditResult;
 use App\Support\HttpCache;
+use App\Support\IgnoreList;
 use App\Support\Package;
 use LaravelZero\Framework\Commands\Command;
 use RuntimeException;
@@ -28,7 +30,11 @@ class AuditCommand extends Command
         {--only-vuln : Show only packages that are at risk}
         {--fix : Print upgrade commands that leave every vulnerable range}
         {--no-dev : Ignore development dependencies}
+        {--ignore=* : Advisory id (GHSA or CVE) to suppress; repeatable}
+        {--config= : Path to a secure-lock.json config (auto-detected otherwise)}
+        {--fail-on-unverified : Exit non-zero when an advisory lookup fails}
         {--json : Structured JSON output (for CI)}
+        {--sarif : SARIF 2.1.0 output (for GitHub code scanning)}
         {--github-token= : GitHub token (or the GITHUB_TOKEN env var)}
         {--cache-ttl=3600 : HTTP cache TTL in seconds (0 disables caching)}';
 
@@ -37,17 +43,20 @@ class AuditCommand extends Command
     public function handle(LockReader $reader): int
     {
         $json = (bool) $this->option('json');
+        $sarif = (bool) $this->option('sarif');
+        $machine = $json || $sarif;
 
         try {
             $packages = $this->readPackages($reader);
+            $ignore = $this->buildIgnoreList();
         } catch (RuntimeException $e) {
-            $this->reportInputError($e->getMessage(), $json);
+            $this->reportInputError($e->getMessage(), $machine);
 
             return 2;
         }
 
         if ($packages === []) {
-            $this->reportInputError('No lockfile found. Looked for composer.lock, pnpm-lock.yaml, bun.lock, yarn.lock and package-lock.json.', $json);
+            $this->reportInputError('No lockfile found. Looked for composer.lock, pnpm-lock.yaml, bun.lock, yarn.lock and package-lock.json.', $machine);
 
             return 2;
         }
@@ -57,9 +66,11 @@ class AuditCommand extends Command
         }
 
         $auditor = $this->makeAuditor();
-        $results = $this->audit($auditor, $packages, $json);
+        $results = $this->audit($auditor, $packages, $ignore, $machine);
 
-        if ($json) {
+        if ($sarif) {
+            $this->renderSarif($results);
+        } elseif ($json) {
             $this->renderJson($results);
         } else {
             $this->renderTable($results);
@@ -192,10 +203,10 @@ class AuditCommand extends Command
      * @param  list<Package>  $packages
      * @return list<AuditResult>
      */
-    private function audit(Auditor $auditor, array $packages, bool $json): array
+    private function audit(Auditor $auditor, array $packages, IgnoreList $ignore, bool $quiet): array
     {
-        if ($json) {
-            return $auditor->run($packages);
+        if ($quiet) {
+            return $auditor->run($packages, $ignore);
         }
 
         $bar = $this->output->createProgressBar(count($packages));
@@ -203,7 +214,7 @@ class AuditCommand extends Command
         $bar->setMessage('');
         $bar->start();
 
-        $results = $auditor->run($packages, function (Package $package) use ($bar): void {
+        $results = $auditor->run($packages, $ignore, function (Package $package) use ($bar): void {
             $bar->setMessage($package->manager().':'.$package->name);
             $bar->advance();
         });
@@ -212,6 +223,49 @@ class AuditCommand extends Command
         $this->newLine(2);
 
         return $results;
+    }
+
+    /**
+     * Build the advisory ignore list from --ignore flags plus a
+     * secure-lock.json config (--config or auto-detected in the project dir).
+     */
+    private function buildIgnoreList(): IgnoreList
+    {
+        /** @var list<string> $flags */
+        $flags = (array) $this->option('ignore');
+        $entries = array_values(array_filter($flags, fn ($v): bool => is_string($v) && $v !== ''));
+
+        $configPath = $this->resolveConfigPath();
+
+        if ($configPath !== null) {
+            $raw = file_get_contents($configPath);
+            $config = $raw === false ? null : json_decode($raw, true);
+
+            if (! is_array($config)) {
+                throw new RuntimeException("Invalid JSON in config: {$configPath}");
+            }
+
+            foreach ((array) ($config['ignore'] ?? []) as $entry) {
+                $entries[] = $entry;
+            }
+        }
+
+        return $entries === [] ? IgnoreList::empty() : IgnoreList::fromEntries($entries, date('Y-m-d'));
+    }
+
+    private function resolveConfigPath(): ?string
+    {
+        $explicit = $this->option('config');
+
+        if (is_string($explicit) && $explicit !== '') {
+            if (! is_file($explicit)) {
+                throw new RuntimeException("Config not found: {$explicit}");
+            }
+
+            return $explicit;
+        }
+
+        return $this->lockInBaseDir('secure-lock.json');
     }
 
     /**
@@ -277,13 +331,7 @@ class AuditCommand extends Command
      */
     private function renderSummary(array $results): void
     {
-        $counts = [
-            Verdict::Vuln->value => 0,
-            Verdict::RiskyUpdate->value => 0,
-            Verdict::SafeUpdate->value => 0,
-            Verdict::Update->value => 0,
-            Verdict::Ok->value => 0,
-        ];
+        $counts = array_fill_keys(array_map(fn (Verdict $v): string => $v->value, Verdict::cases()), 0);
 
         foreach ($results as $result) {
             $counts[$result->verdict->value]++;
@@ -291,14 +339,35 @@ class AuditCommand extends Command
 
         $this->newLine();
         $this->line(sprintf(
-            '  <fg=red>%d vulnerable now</>  ·  <fg=magenta>%d risky update</>  ·  <fg=green>%d safe update</>  ·  <fg=cyan>%d update available</>  ·  <fg=gray>%d up to date</>',
+            '  <fg=red>%d vulnerable now</>  ·  <fg=magenta>%d risky update</>  ·  <fg=yellow>%d unverified</>  ·  <fg=green>%d safe update</>  ·  <fg=cyan>%d update available</>  ·  <fg=gray>%d up to date</>',
             $counts[Verdict::Vuln->value],
             $counts[Verdict::RiskyUpdate->value],
+            $counts[Verdict::Unknown->value],
             $counts[Verdict::SafeUpdate->value],
             $counts[Verdict::Update->value],
             $counts[Verdict::Ok->value],
         ));
         $this->newLine();
+
+        if ($counts[Verdict::Unknown->value] > 0) {
+            $this->components->warn(sprintf(
+                '%d package(s) could not be verified (advisory lookup failed). Set a GITHUB_TOKEN to raise the rate limit and re-run.',
+                $counts[Verdict::Unknown->value],
+            ));
+        }
+    }
+
+    /**
+     * @param  list<AuditResult>  $results
+     */
+    private function renderSarif(array $results): void
+    {
+        $sarif = (new SarifReporter)->build(
+            $this->sortByRisk($results),
+            (string) config('app.version', 'unreleased'),
+        );
+
+        $this->output->writeln((string) json_encode($sarif, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /**
@@ -384,8 +453,14 @@ class AuditCommand extends Command
      */
     private function exitCode(array $results): int
     {
+        $failOnUnverified = (bool) $this->option('fail-on-unverified');
+
         foreach ($results as $result) {
             if ($result->verdict->failsCi()) {
+                return 1;
+            }
+
+            if ($failOnUnverified && $result->unverified) {
                 return 1;
             }
         }

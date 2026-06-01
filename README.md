@@ -84,12 +84,16 @@ target one explicitly.
 --pnpm=           Explicit path to pnpm-lock.yaml
 --bun=            Explicit path to bun.lock
 --yarn=           Explicit path to yarn.lock
---only-vuln       Show only packages at risk
---fix             Print upgrade commands that leave every vulnerable range
---no-dev          Ignore development dependencies
---json            Structured JSON output (for CI)
---github-token=   GitHub token (or the GITHUB_TOKEN env var)
---cache-ttl=3600  HTTP cache TTL in seconds (0 disables caching)
+--only-vuln           Show only packages at risk
+--fix                 Print upgrade commands that leave every vulnerable range
+--no-dev              Ignore development dependencies
+--ignore=             Advisory id (GHSA or CVE) to suppress; repeatable
+--config=             Path to a secure-lock.json (auto-detected otherwise)
+--fail-on-unverified  Exit non-zero when an advisory lookup fails
+--json                Structured JSON output (for CI)
+--sarif               SARIF 2.1.0 output (for GitHub code scanning)
+--github-token=       GitHub token (or the GITHUB_TOKEN env var)
+--cache-ttl=3600      HTTP cache TTL in seconds (0 disables caching)
 ```
 
 ## Verdicts
@@ -100,14 +104,21 @@ version against those still hitting the **latest** version:
 | Verdict | Badge | Meaning |
 |---------|-------|---------|
 | `VULN` | `● VULN` (red) | vulnerable now, no published fix |
-| `SAFE_UPDATE` | `● SAFE` (green) | the update **fixes** the vulnerability |
 | `RISKY_UPDATE` | `● RISKY` (magenta) | an update exists but stays exposed |
+| `UNKNOWN` | `● UNKNOWN` (yellow) | advisory lookup failed — status not verified |
+| `SAFE_UPDATE` | `● SAFE` (green) | the update **fixes** the vulnerability |
 | `UPDATE` | `● UPDATE` (cyan) | newer version, no known vulnerability |
 | `OK` | `● OK` (gray) | up to date and clean |
 
-The table is sorted by risk (`VULN` > `RISKY` > `SAFE` > `UPDATE` > `OK`)
-and the `NOTE` column shows the highest-severity advisory as
+The table is sorted by risk (`VULN` > `RISKY` > `UNKNOWN` > `SAFE` > `UPDATE` >
+`OK`) and the `NOTE` column shows the highest-severity advisory as
 `SEVERITY CVE-XXXX (+N)` (the CVE when present, otherwise the GHSA id).
+
+> **`UNKNOWN` matters.** When an advisory lookup fails (most often the GitHub
+> rate limit without a token), the package is reported as `UNKNOWN` — never as
+> `OK`. A security tool must not turn a failed request into a false "all clear".
+> Set a `GITHUB_TOKEN` to lift the limit, and add `--fail-on-unverified` to make
+> CI fail when anything could not be checked.
 
 ## Fixing
 
@@ -125,6 +136,54 @@ Note how the target is the *minimum* safe version, not the newest:
 Packages with no version that leaves the vulnerable range (`VULN`) are skipped.
 In `--json` mode each package gains a `fix` object (`{target, command}`) or
 `null`.
+
+## Suppressing advisories
+
+Accepted or un-patchable risks would otherwise keep failing CI forever. Pass
+one or more `--ignore` flags, or commit a `secure-lock.json` to the project
+root (auto-detected, or point at it with `--config`):
+
+```jsonc
+{
+  "ignore": [
+    "CVE-2022-31091",
+    { "id": "GHSA-xxxx-yyyy-zzzz", "expires": "2026-12-31" }
+  ]
+}
+```
+
+```bash
+secure-lock --ignore=GHSA-xxxx-yyyy-zzzz --ignore=CVE-2022-31091
+```
+
+An ignored advisory no longer counts toward the verdict. Entries with an
+`expires` date stop suppressing once that date has passed, so a deferred risk
+re-surfaces instead of being forgotten.
+
+## GitHub code scanning (SARIF)
+
+`--sarif` emits SARIF 2.1.0, which GitHub can ingest to show the findings in
+the repository's **Security › Code scanning** tab:
+
+```yaml
+name: secure-lock
+on: [push, pull_request]
+permissions:
+  security-events: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: composer global require jeffersongoncalves/secure-lock-cli
+      - run: secure-lock --no-dev --sarif > results.sarif
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+```
 
 ## Exit codes (for CI)
 

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\Verdict;
+use App\Support\Advisory;
 use App\Support\AuditResult;
+use App\Support\IgnoreList;
 use App\Support\Package;
 use Closure;
 
@@ -25,13 +27,24 @@ final class Auditor
      * @param  (Closure(Package): void)|null  $onProgress  Called after each package is processed.
      * @return list<AuditResult>
      */
-    public function run(array $packages, ?Closure $onProgress = null): array
+    public function run(array $packages, ?IgnoreList $ignore = null, ?Closure $onProgress = null): array
     {
+        $ignore ??= IgnoreList::empty();
         $results = [];
 
         foreach ($packages as $package) {
             $package->latest = $this->registry->latest($package);
-            $package->advisories = $this->advisories->forPackage($package);
+
+            $lookup = $this->advisories->forPackage($package);
+            $package->advisoriesFailed = $lookup->failed;
+
+            // Suppress accepted/ignored advisories before classifying.
+            $package->advisories = $ignore->isEmpty()
+                ? $lookup->advisories
+                : array_values(array_filter(
+                    $lookup->advisories,
+                    fn (Advisory $a): bool => ! $ignore->matches($a),
+                ));
 
             $results[] = $this->classify($package);
 
@@ -48,6 +61,12 @@ final class Auditor
      */
     public function classify(Package $package): AuditResult
     {
+        // A failed advisory lookup means the status cannot be trusted — never
+        // let it masquerade as OK/SAFE.
+        if ($package->advisoriesFailed) {
+            return new AuditResult($package, Verdict::Unknown, [], [], unverified: true);
+        }
+
         $vulnNow = $package->currentVulnerabilities();
         $vulnLatest = $package->vulnerabilitiesInLatest();
         $hasUpdate = $package->hasUpdate();
