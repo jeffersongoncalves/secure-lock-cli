@@ -2,6 +2,22 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.2.1 - 2026-06-01
+
+### Changed
+
+- All CLI output is now **English** — verdict badges (`SAFE`/`RISKY`/`VULN`/`UPDATE`/`OK`), table headers (STATUS/ECO/PACKAGE/CURRENT/LATEST/NOTE), the summary line and the `--fix` section — for an international audience.
+
+### Docs
+
+- Added two terminal screenshots (real tool output) to the README: the audit table and the `--fix` minimal-safe-version suggestions.
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.2.0 - 2026-06-01
 
 ### Added
@@ -13,6 +29,7 @@ All notable changes to `secure-lock-cli` will be documented in this file.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 ```
 ## 1.1.0 - 2026-06-01
@@ -32,6 +49,7 @@ All JavaScript managers resolve against the shared npm ecosystem, so advisory an
 composer global require jeffersongoncalves/secure-lock-cli
 
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -48,6 +66,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.1 - 2026-06-01
 
@@ -61,6 +80,7 @@ No functional changes to the audit itself.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -84,6 +104,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
