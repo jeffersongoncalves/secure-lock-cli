@@ -2,6 +2,20 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.5.0 - 2026-06-01
+
+Reliability for Composer without a token.
+
+### Added
+
+- **Packagist advisory fallback** — when a Composer package's GitHub Advisory lookup fails (most often the rate limit without a `GITHUB_TOKEN`), the Packagist Security Advisories API is queried as a redundant backend. All failed packages ride in one batched `packages[]` request, and the result is recovered instead of being left `UNKNOWN`. **Composer can now be audited with no token at all.** npm is unaffected (no Packagist equivalent). Disable with `--no-packagist`.
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.4.0 - 2026-06-01
 
 Performance and code quality.
@@ -21,6 +35,7 @@ No changes to audit behavior or output.
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
 
+
 ```
 ## 1.3.0 - 2026-06-01
 
@@ -36,6 +51,7 @@ Reliability, CI control and GitHub integration.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 ```
@@ -56,6 +72,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.2.0 - 2026-06-01
 
@@ -68,6 +85,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -93,6 +111,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -106,6 +125,7 @@ No changes to the audit behavior.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -132,6 +152,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.0 - 2026-06-01
 
@@ -151,6 +172,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
