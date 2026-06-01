@@ -50,15 +50,11 @@ class SelfUpdateCommand extends Command
         }
 
         try {
-            $tempFile = null;
+            $this->components->info('Downloading update...');
+            $tempFile = $selfUpdateService->download($release['url']);
 
-            $this->components->task('Downloading update', function () use ($selfUpdateService, $release, &$tempFile): void {
-                $tempFile = $selfUpdateService->download($release['url']);
-            });
-
-            $this->components->task('Replacing PHAR', function () use ($selfUpdateService, $tempFile): void {
-                $selfUpdateService->replacePhar((string) $tempFile);
-            });
+            $this->components->info('Replacing PHAR...');
+            $selfUpdateService->replacePhar($tempFile);
         } catch (RuntimeException $e) {
             $this->components->error($e->getMessage());
 
