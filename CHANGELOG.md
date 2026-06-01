@@ -2,6 +2,22 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.3.0 - 2026-06-01
+
+Reliability, CI control and GitHub integration.
+
+### Added
+
+- **Unverified detection (#1)** — a failed advisory lookup (rate limit, network error) is no longer mistaken for "no advisories". Such packages get a new **`UNKNOWN`** verdict (never `OK`/`SAFE`), failures aren't cached, advisory pagination is followed, and `--fail-on-unverified` makes CI fail when anything could not be checked. A security tool must not turn a failed request into a false all-clear.
+- **Ignore list (#4)** — `--ignore=<GHSA|CVE>` (repeatable) and a `secure-lock.json` config suppress accepted or un-patchable advisories. Entries may carry an `expires` date after which they re-surface.
+- **SARIF output (#6)** — `--sarif` emits SARIF 2.1.0 for GitHub code scanning; findings appear in the repository's Security tab. See the README for the upload-sarif workflow.
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.2.1 - 2026-06-01
 
 ### Changed
@@ -17,6 +33,7 @@ All notable changes to `secure-lock-cli` will be documented in this file.
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
 
+
 ```
 ## 1.2.0 - 2026-06-01
 
@@ -29,6 +46,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 ```
@@ -50,6 +68,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -67,6 +86,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.1 - 2026-06-01
 
@@ -80,6 +100,7 @@ No functional changes to the audit itself.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -104,6 +125,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
