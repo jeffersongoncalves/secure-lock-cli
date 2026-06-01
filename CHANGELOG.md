@@ -2,6 +2,26 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.4.0 - 2026-06-01
+
+Performance and code quality.
+
+### Changed
+
+- **Concurrent lookups (#3)** — registry and advisory requests for every package are now fired concurrently with `Http::pool` (capped) through a shared `HttpFetcher`, collapsing a large lockfile's many sequential round-trips into a few waves. The fetcher centralises cache reuse and rate-limit/failure handling; only the rare package with >100 advisories paginates sequentially.
+
+### Internal
+
+- **PHPStan (#8)** — larastan at level 6 (clean, no baseline), a `phpstan.yml` workflow, and `composer test` now runs lint + types + unit.
+
+No changes to audit behavior or output.
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.3.0 - 2026-06-01
 
 Reliability, CI control and GitHub integration.
@@ -16,6 +36,7 @@ Reliability, CI control and GitHub integration.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 ```
 ## 1.2.1 - 2026-06-01
@@ -34,6 +55,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 composer global require jeffersongoncalves/secure-lock-cli
 
 
+
 ```
 ## 1.2.0 - 2026-06-01
 
@@ -46,6 +68,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -69,6 +92,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -87,6 +111,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.1 - 2026-06-01
 
@@ -100,6 +125,7 @@ No functional changes to the audit itself.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -125,6 +151,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
