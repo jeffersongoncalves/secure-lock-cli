@@ -16,9 +16,14 @@ for every package:
 
 Born out of the recent wave of supply-chain attacks (compromised /
 vulnerable packages on Composer and npm), the tool distinguishes a *useful
-bump that fixes the flaw* from a *useless bump that stays exposed*. It
-covers two ecosystems: **Composer** (`composer.lock`) and **npm**
-(`package-lock.json`, v1/v2/v3).
+bump that fixes the flaw* from a *useless bump that stays exposed*.
+
+It covers **Composer** (`composer.lock`) and the JavaScript managers that
+share the npm ecosystem: **npm** (`package-lock.json` v1/v2/v3 and
+`npm-shrinkwrap.json`), **pnpm** (`pnpm-lock.yaml` lockfileVersion 5/6/9) and
+**bun** (`bun.lock` text lockfile). The `ECO` column shows the real manager a
+package came from, while advisories and the registry are resolved against the
+shared npm ecosystem.
 
 Built with [Laravel Zero](https://laravel-zero.com) and modeled on the
 other CLIs in this monorepo.
@@ -65,6 +70,8 @@ secure-lock --dir=/path/to/proj  # audit a specific directory
 --dir=            Project directory (defaults to the current directory)
 --composer=       Explicit path to composer.lock
 --npm=            Explicit path to package-lock.json
+--pnpm=           Explicit path to pnpm-lock.yaml
+--bun=            Explicit path to bun.lock
 --only-vuln       Show only packages at risk
 --no-dev          Ignore development dependencies
 --json            Structured JSON output (for CI)

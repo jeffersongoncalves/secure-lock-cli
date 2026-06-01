@@ -25,7 +25,21 @@ final class Package
         public readonly string $current,
         public readonly Ecosystem $ecosystem,
         public readonly bool $isDev = false,
+        /**
+         * Display label for the package manager it came from (e.g. "pnpm",
+         * "bun", "npm", "composer"). Defaults to the ecosystem label. The
+         * ecosystem itself stays Composer/Npm for registry & advisory lookups.
+         */
+        public readonly ?string $source = null,
     ) {}
+
+    /**
+     * The package manager label shown in the ECO column.
+     */
+    public function manager(): string
+    {
+        return $this->source ?? $this->ecosystem->label();
+    }
 
     public function hasUpdate(): bool
     {

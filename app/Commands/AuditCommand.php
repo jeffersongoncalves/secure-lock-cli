@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Enums\Ecosystem;
 use App\Enums\Verdict;
 use App\Services\AdvisoryClient;
 use App\Services\Auditor;
@@ -22,13 +21,15 @@ class AuditCommand extends Command
         {--dir= : Project directory (defaults to the current working directory)}
         {--composer= : Explicit path to composer.lock}
         {--npm= : Explicit path to package-lock.json}
+        {--pnpm= : Explicit path to pnpm-lock.yaml}
+        {--bun= : Explicit path to bun.lock}
         {--only-vuln : Show only packages that are at risk}
         {--no-dev : Ignore development dependencies}
         {--json : Structured JSON output (for CI)}
         {--github-token= : GitHub token (or the GITHUB_TOKEN env var)}
         {--cache-ttl=3600 : HTTP cache TTL in seconds (0 disables caching)}';
 
-    protected $description = 'Audit Composer and npm dependencies for known vulnerabilities and safe updates';
+    protected $description = 'Audit Composer, npm, pnpm and bun dependencies for known vulnerabilities and safe updates';
 
     public function handle(LockReader $reader): int
     {
@@ -43,7 +44,7 @@ class AuditCommand extends Command
         }
 
         if ($packages === []) {
-            $this->reportInputError('No lockfile found. Looked for composer.lock and package-lock.json.', $json);
+            $this->reportInputError('No lockfile found. Looked for composer.lock, pnpm-lock.yaml, bun.lock and package-lock.json.', $json);
 
             return 2;
         }
@@ -72,27 +73,29 @@ class AuditCommand extends Command
     {
         $packages = [];
 
-        $composerPath = $this->resolveLockPath('composer', Ecosystem::Composer);
+        $composerPath = $this->resolveComposerPath();
 
         if ($composerPath !== null) {
             $packages = [...$packages, ...$reader->readComposer($composerPath)];
         }
 
-        $npmPath = $this->resolveLockPath('npm', Ecosystem::Npm);
-
-        if ($npmPath !== null) {
-            $packages = [...$packages, ...$reader->readNpm($npmPath)];
+        foreach ($this->resolveJsLocks() as [$manager, $path]) {
+            $packages = [...$packages, ...match ($manager) {
+                'npm' => $reader->readNpm($path),
+                'pnpm' => $reader->readPnpm($path),
+                'bun' => $reader->readBun($path),
+            }];
         }
 
         return $packages;
     }
 
     /**
-     * Resolution order: explicit flag > --dir > current working directory.
+     * Resolution order: --composer flag > --dir/cwd composer.lock.
      */
-    private function resolveLockPath(string $option, Ecosystem $ecosystem): ?string
+    private function resolveComposerPath(): ?string
     {
-        $explicit = $this->option($option);
+        $explicit = $this->option('composer');
 
         if (is_string($explicit) && $explicit !== '') {
             if (! is_file($explicit)) {
@@ -102,10 +105,55 @@ class AuditCommand extends Command
             return $explicit;
         }
 
+        return $this->lockInBaseDir('composer.lock');
+    }
+
+    /**
+     * Resolve the JavaScript lockfile(s) to read.
+     *
+     * Explicit --npm/--pnpm/--bun flags win (each read if given). Otherwise a
+     * single lockfile is auto-detected in the project directory by priority:
+     * pnpm > bun > npm — since a project uses one JS package manager.
+     *
+     * @return list<array{0: string, 1: string}> list of [manager, path]
+     */
+    private function resolveJsLocks(): array
+    {
+        $explicit = [];
+
+        foreach (['npm', 'pnpm', 'bun'] as $manager) {
+            $path = $this->option($manager);
+
+            if (is_string($path) && $path !== '') {
+                if (! is_file($path)) {
+                    throw new RuntimeException("Lockfile not found: {$path}");
+                }
+
+                $explicit[] = [$manager, $path];
+            }
+        }
+
+        if ($explicit !== []) {
+            return $explicit;
+        }
+
+        foreach (['pnpm' => 'pnpm-lock.yaml', 'bun' => 'bun.lock', 'npm' => 'package-lock.json', 'npm-shrinkwrap' => 'npm-shrinkwrap.json'] as $manager => $file) {
+            $path = $this->lockInBaseDir($file);
+
+            if ($path !== null) {
+                return [[$manager === 'npm-shrinkwrap' ? 'npm' : $manager, $path]];
+            }
+        }
+
+        return [];
+    }
+
+    private function lockInBaseDir(string $file): ?string
+    {
         $dir = $this->option('dir');
         $base = is_string($dir) && $dir !== '' ? $dir : getcwd();
 
-        $path = rtrim((string) $base, '/\\').DIRECTORY_SEPARATOR.$ecosystem->lockFileName();
+        $path = rtrim((string) $base, '/\\').DIRECTORY_SEPARATOR.$file;
 
         return is_file($path) ? $path : null;
     }
@@ -148,7 +196,7 @@ class AuditCommand extends Command
         $bar->start();
 
         $results = $auditor->run($packages, function (Package $package) use ($bar): void {
-            $bar->setMessage($package->ecosystem->label().':'.$package->name);
+            $bar->setMessage($package->manager().':'.$package->name);
             $bar->advance();
         });
 
@@ -183,7 +231,7 @@ class AuditCommand extends Command
         foreach ($results as $result) {
             $rows[] = [
                 $result->verdict->badge(),
-                $result->package->ecosystem->label(),
+                $result->package->manager(),
                 $result->package->name,
                 $result->package->current,
                 $result->package->latest ?? '-',

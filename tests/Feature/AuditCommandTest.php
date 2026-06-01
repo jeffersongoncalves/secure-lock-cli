@@ -76,6 +76,32 @@ it('exits 1 when a package is vulnerable with no fix available', function () {
         ->assertExitCode(1);
 });
 
+it('audits a pnpm lockfile and reports the pnpm manager in the output', function () {
+    Http::fake([
+        'registry.npmjs.org/*' => Http::response(['dist-tags' => ['latest' => '4.17.21']]),
+        'api.github.com/advisories*' => Http::response([]),
+    ]);
+
+    $yaml = <<<'YAML'
+    lockfileVersion: '9.0'
+    importers:
+      .:
+        dependencies:
+          lodash:
+            specifier: ^4.17.21
+            version: 4.17.21
+    packages:
+      lodash@4.17.21:
+        resolution: {integrity: sha512-x}
+    YAML;
+
+    $path = writeTempLock('pnpm-lock.yaml', $yaml);
+
+    $this->artisan('audit', ['--pnpm' => $path, '--json' => true, '--cache-ttl' => 0])
+        ->expectsOutputToContain('pnpm')
+        ->assertExitCode(0);
+});
+
 it('exits 2 when no lockfile is found', function () {
     $this->artisan('audit', ['--dir' => sys_get_temp_dir().'/secure-lock-empty-'.uniqid(), '--cache-ttl' => 0])
         ->assertExitCode(2);

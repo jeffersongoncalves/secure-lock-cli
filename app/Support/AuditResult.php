@@ -58,6 +58,7 @@ final class AuditResult
     {
         return [
             'ecosystem' => $this->package->ecosystem->value,
+            'manager' => $this->package->manager(),
             'name' => $this->package->name,
             'current' => $this->package->current,
             'latest' => $this->package->latest,
