@@ -2,6 +2,19 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.2.0 - 2026-06-01
+
+### Added
+
+- **yarn** support — reads `yarn.lock` classic v1 (custom format) and berry v2+ (YAML). dev flags are inferred from a sibling `package.json`. Auto-detection priority is now pnpm > bun > yarn > npm, with an explicit `--yarn` flag.
+- **`--fix`** — prints, per package manager, the upgrade command for each currently-vulnerable package. The target is the smallest version above the installed one that escapes *every* vulnerable range (from advisory patched versions + latest), so the bump is minimal and verified. Packages with no safe target are skipped. In `--json` mode each package gains a `fix` object.
+
+### Install / upgrade
+
+```bash
+composer global require jeffersongoncalves/secure-lock-cli
+
+```
 ## 1.1.0 - 2026-06-01
 
 ### Added
@@ -18,6 +31,7 @@ All JavaScript managers resolve against the shared npm ecosystem, so advisory an
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -33,6 +47,7 @@ No changes to the audit behavior.
 composer global require jeffersongoncalves/secure-lock-cli
 
 
+
 ```
 ## 1.0.1 - 2026-06-01
 
@@ -46,6 +61,7 @@ No functional changes to the audit itself.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -68,6 +84,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
