@@ -18,6 +18,12 @@ use App\Support\AdvisoryResult;
  */
 final class PackagistAdvisoryClient
 {
+    /**
+     * Packages per request — bounds the GET query-string length and keeps a
+     * single failure from leaving every package unverified.
+     */
+    private const BATCH = 80;
+
     public function __construct(
         private readonly HttpFetcher $fetcher,
     ) {}
@@ -28,13 +34,26 @@ final class PackagistAdvisoryClient
      */
     public function forComposerPackages(array $names): array
     {
-        if ($names === []) {
-            return [];
+        $results = [];
+
+        foreach (array_chunk(array_values(array_unique($names)), self::BATCH) as $batch) {
+            foreach ($this->fetchBatch($batch) as $name => $result) {
+                $results[$name] = $result;
+            }
         }
 
+        return $results;
+    }
+
+    /**
+     * @param  list<string>  $names
+     * @return array<string, AdvisoryResult>
+     */
+    private function fetchBatch(array $names): array
+    {
         $query = implode('&', array_map(
             static fn (string $name): string => 'packages[]='.rawurlencode($name),
-            array_values(array_unique($names)),
+            $names,
         ));
 
         $outcome = $this->fetcher->fetch(

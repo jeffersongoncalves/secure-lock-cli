@@ -22,6 +22,13 @@ final class NpmAdvisoryClient
 {
     private const ENDPOINT = 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk';
 
+    /**
+     * Packages per bulk request. Chunking keeps a single failure (e.g. a 429
+     * after a large GET burst to the same host) from leaving every package
+     * unverified, and keeps each request small.
+     */
+    private const BATCH = 80;
+
     public function __construct(
         private readonly HttpFetcher $fetcher,
     ) {}
@@ -32,10 +39,23 @@ final class NpmAdvisoryClient
      */
     public function forPackages(array $packages): array
     {
-        if ($packages === []) {
-            return [];
+        $results = [];
+
+        foreach (array_chunk($packages, self::BATCH) as $batch) {
+            foreach ($this->fetchBatch($batch) as $name => $result) {
+                $results[$name] = $result;
+            }
         }
 
+        return $results;
+    }
+
+    /**
+     * @param  list<Package>  $packages
+     * @return array<string, AdvisoryResult>
+     */
+    private function fetchBatch(array $packages): array
+    {
         $body = [];
 
         foreach ($packages as $package) {

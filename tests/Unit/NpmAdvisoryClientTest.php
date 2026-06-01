@@ -72,3 +72,18 @@ it('marks every package failed when the request fails', function () {
 
     expect($results['lodash']->failed)->toBeTrue();
 });
+
+it('chunks large package sets into multiple bulk requests', function () {
+    Http::fake(['registry.npmjs.org/-/npm/v1/security/advisories/bulk' => Http::response([])]);
+
+    $packages = [];
+    for ($i = 0; $i < 81; $i++) {
+        $packages[] = npmPackage("pkg-$i", '1.0.0', null);
+    }
+
+    $results = npmClient()->forPackages($packages);
+
+    // 81 packages with a batch size of 80 → two requests, all accounted for.
+    Http::assertSentCount(2);
+    expect($results)->toHaveCount(81);
+});

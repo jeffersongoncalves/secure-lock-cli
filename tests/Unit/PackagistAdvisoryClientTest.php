@@ -63,3 +63,17 @@ it('marks every package failed when the request fails', function () {
 
     expect($results['a/b']->failed)->toBeTrue();
 });
+
+it('chunks large name sets into multiple requests', function () {
+    Http::fake(['packagist.org/api/security-advisories*' => Http::response(['advisories' => []])]);
+
+    $names = [];
+    for ($i = 0; $i < 81; $i++) {
+        $names[] = "vendor/pkg-$i";
+    }
+
+    $results = packagist()->forComposerPackages($names);
+
+    Http::assertSentCount(2);
+    expect($results)->toHaveCount(81);
+});
