@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\Ecosystem;
 use App\Support\AuditResult;
 use App\Support\FixSuggestion;
 use App\Support\Package;
@@ -23,7 +24,12 @@ final class Fixer
             return null;
         }
 
-        return new FixSuggestion($result->package, $target, $this->command($result->package, $target));
+        return new FixSuggestion(
+            $result->package,
+            $target,
+            $this->command($result->package, $target),
+            transitive: ! $result->package->isDirect,
+        );
     }
 
     /**
@@ -80,12 +86,30 @@ final class Fixer
     {
         $name = $package->name;
 
+        // Composer has no overrides mechanism; `require` is the accepted way to
+        // pin a transitive dependency too.
+        if ($package->ecosystem === Ecosystem::Composer) {
+            return "composer require {$name}:^{$target}";
+        }
+
+        // Direct JS dependency: a plain add/install pins the new version.
+        if ($package->isDirect) {
+            return match ($package->manager()) {
+                'npm' => "npm install {$name}@{$target}",
+                'pnpm' => "pnpm add {$name}@{$target}",
+                'bun' => "bun add {$name}@{$target}",
+                'yarn' => "yarn add {$name}@{$target}",
+                default => "# upgrade {$name} to {$target}",
+            };
+        }
+
+        // Transitive JS dependency: an add/install won't reach the nested
+        // version — pin it through the manager's override mechanism.
         return match ($package->manager()) {
-            'composer' => "composer require {$name}:^{$target}",
-            'npm' => "npm install {$name}@{$target}",
-            'pnpm' => "pnpm add {$name}@{$target}",
-            'bun' => "bun add {$name}@{$target}",
-            'yarn' => "yarn add {$name}@{$target}",
+            'npm' => "# transitive: add \"overrides\": { \"{$name}\": \"{$target}\" } to package.json, then run: npm install",
+            'pnpm' => "# transitive: add \"pnpm\": { \"overrides\": { \"{$name}\": \"{$target}\" } } to package.json, then run: pnpm install",
+            'bun' => "# transitive: add \"overrides\": { \"{$name}\": \"{$target}\" } to package.json, then run: bun install",
+            'yarn' => "# transitive: add \"resolutions\": { \"{$name}\": \"{$target}\" } to package.json, then run: yarn install",
             default => "# upgrade {$name} to {$target}",
         };
     }

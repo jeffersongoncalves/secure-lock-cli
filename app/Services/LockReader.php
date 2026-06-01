@@ -62,7 +62,7 @@ final class LockReader
         // Lockfile v1: the "dependencies" tree.
         if (isset($data['dependencies']) && is_array($data['dependencies'])) {
             $packages = [];
-            $this->collectNpmV1($data['dependencies'], $packages);
+            $this->collectNpmV1($data['dependencies'], $packages, direct: true);
 
             return array_values($packages);
         }
@@ -76,6 +76,18 @@ final class LockReader
      */
     private function readNpmPackagesMap(array $packagesMap): array
     {
+        // Direct dependencies are those declared on the root "" entry.
+        $direct = [];
+        $root = $packagesMap[''] ?? null;
+
+        if (is_array($root)) {
+            foreach (['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'] as $group) {
+                foreach (array_keys((array) ($root[$group] ?? [])) as $name) {
+                    $direct[(string) $name] = true;
+                }
+            }
+        }
+
         $packages = [];
 
         foreach ($packagesMap as $key => $entry) {
@@ -101,6 +113,7 @@ final class LockReader
                 ecosystem: Ecosystem::Npm,
                 isDev: ($entry['dev'] ?? false) === true,
                 source: 'npm',
+                isDirect: isset($direct[$name]),
             );
         }
 
@@ -126,7 +139,7 @@ final class LockReader
      * @param  array<array-key, mixed>  $dependencies
      * @param  array<string, Package>  $packages
      */
-    private function collectNpmV1(array $dependencies, array &$packages): void
+    private function collectNpmV1(array $dependencies, array &$packages, bool $direct): void
     {
         foreach ($dependencies as $name => $entry) {
             if (! is_string($name) || ! is_array($entry)) {
@@ -142,11 +155,12 @@ final class LockReader
                     ecosystem: Ecosystem::Npm,
                     isDev: ($entry['dev'] ?? false) === true,
                     source: 'npm',
+                    isDirect: $direct,
                 );
             }
 
             if (isset($entry['dependencies']) && is_array($entry['dependencies'])) {
-                $this->collectNpmV1($entry['dependencies'], $packages);
+                $this->collectNpmV1($entry['dependencies'], $packages, direct: false);
             }
         }
     }
@@ -232,6 +246,7 @@ final class LockReader
                 ecosystem: Ecosystem::Npm,
                 isDev: $dev,
                 source: 'pnpm',
+                isDirect: isset($devDirect[$name]) || isset($prodDirect[$name]),
             );
         }
 
@@ -293,6 +308,7 @@ final class LockReader
                 ecosystem: Ecosystem::Npm,
                 isDev: $dev,
                 source: 'bun',
+                isDirect: isset($devDirect[$name]) || isset($prodDirect[$name]),
             );
         }
 
@@ -345,6 +361,7 @@ final class LockReader
                 ecosystem: Ecosystem::Npm,
                 isDev: isset($devDirect[$name]) && ! isset($prodDirect[$name]),
                 source: 'yarn',
+                isDirect: isset($devDirect[$name]) || isset($prodDirect[$name]),
             );
         }
 

@@ -47,7 +47,45 @@ it('builds the command for the package manager', function () {
     $suggestion = (new Fixer)->suggest(classify($package));
 
     expect($suggestion->target)->toBe('4.0.0')
-        ->and($suggestion->command)->toBe('pnpm add marked@4.0.0');
+        ->and($suggestion->command)->toBe('pnpm add marked@4.0.0')
+        ->and($suggestion->transitive)->toBeFalse();
+});
+
+it('suggests a pnpm overrides edit for a transitive dependency', function () {
+    $package = new Package('marked', '1.0.0', Ecosystem::Npm, source: 'pnpm', isDirect: false);
+    $package->latest = '4.0.0';
+    $package->advisories = [
+        new Advisory('GHSA-b', 'ReDoS', Severity::High, ['< 4.0.0'], ['4.0.0']),
+    ];
+
+    $suggestion = (new Fixer)->suggest(classify($package));
+
+    expect($suggestion->transitive)->toBeTrue()
+        ->and($suggestion->command)->toContain('"pnpm": { "overrides": { "marked": "4.0.0" } }')
+        ->and($suggestion->command)->toContain('pnpm install');
+});
+
+it('uses yarn resolutions for a transitive yarn dependency', function () {
+    $package = new Package('marked', '1.0.0', Ecosystem::Npm, source: 'yarn', isDirect: false);
+    $package->latest = '4.0.0';
+    $package->advisories = [
+        new Advisory('GHSA-b', 'ReDoS', Severity::High, ['< 4.0.0'], ['4.0.0']),
+    ];
+
+    expect((new Fixer)->suggest(classify($package))->command)->toContain('"resolutions": { "marked": "4.0.0" }');
+});
+
+it('uses composer require even for a transitive composer dependency', function () {
+    $package = new Package('acme/lib', '1.0.0', Ecosystem::Composer, source: 'composer', isDirect: false);
+    $package->latest = '2.0.0';
+    $package->advisories = [
+        new Advisory('GHSA-c', 'x', Severity::High, ['< 2.0.0'], ['2.0.0']),
+    ];
+
+    $suggestion = (new Fixer)->suggest(classify($package));
+
+    expect($suggestion->command)->toBe('composer require acme/lib:^2.0.0')
+        ->and($suggestion->transitive)->toBeTrue();
 });
 
 it('returns null when no available version escapes the ranges', function () {

@@ -38,6 +38,12 @@ final class Package
          * ecosystem itself stays Composer/Npm for registry & advisory lookups.
          */
         public readonly ?string $source = null,
+        /**
+         * Whether the project depends on this package directly (declared in
+         * the manifest) vs. pulled in transitively. Drives how --fix proposes
+         * the upgrade (a direct add/require vs. an overrides/resolutions edit).
+         */
+        public readonly bool $isDirect = true,
     ) {}
 
     /**

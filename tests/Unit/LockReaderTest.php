@@ -29,7 +29,7 @@ it('reads npm lockfile v3 from the packages map', function () {
     $path = writeTempLock('package-lock-v3.json', json_encode([
         'lockfileVersion' => 3,
         'packages' => [
-            '' => ['name' => 'root'],
+            '' => ['name' => 'root', 'dependencies' => ['lodash' => '^4']],
             'node_modules/lodash' => ['version' => '4.17.21'],
             'node_modules/@babel/core' => ['version' => '7.24.0', 'dev' => true],
             'node_modules/a/node_modules/b' => ['version' => '1.0.0'],
@@ -41,9 +41,12 @@ it('reads npm lockfile v3 from the packages map', function () {
 
     expect($packages)->toHaveCount(3)
         ->and($byName['lodash']->current)->toBe('4.17.21')
+        ->and($byName['lodash']->isDirect)->toBeTrue()
         ->and($byName['@babel/core']->isDev)->toBeTrue()
         ->and($byName['@babel/core']->ecosystem)->toBe(Ecosystem::Npm)
-        ->and($byName['b']->current)->toBe('1.0.0');
+        ->and($byName['@babel/core']->isDirect)->toBeFalse()
+        ->and($byName['b']->current)->toBe('1.0.0')
+        ->and($byName['b']->isDirect)->toBeFalse();
 });
 
 it('reads npm lockfile v1 from the dependencies tree', function () {

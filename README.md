@@ -134,9 +134,16 @@ and verified — not just "the newest":
 Note how the target is the *minimum* safe version, not the newest:
 `guzzlehttp/guzzle` goes to `6.5.8` (not `7.10.5`) and `phpunit` to `9.6.33`.
 
+**Direct vs. transitive.** A direct dependency gets a plain
+`add`/`require`/`install`. A *transitive* one can't be pinned that way — an
+`npm install` wouldn't reach the nested version — so the suggestion is the
+manager's override mechanism instead: `overrides` (npm/bun), `pnpm.overrides`
+(pnpm) or `resolutions` (yarn) in `package.json`. Composer always uses
+`composer require`, which pins transitive packages too.
+
 Packages with no version that leaves the vulnerable range (`VULN`) are skipped.
-In `--json` mode each package gains a `fix` object (`{target, command}`) or
-`null`.
+In `--json` mode each package gains a `fix` object (`{target, command,
+transitive}`) or `null`.
 
 ## Suppressing advisories
 
@@ -264,7 +271,5 @@ lockfiles created during tests live under `tests/tmp/` (gitignored).
 
 ## Roadmap
 
-- Transitive-aware `--fix` (currently emits a direct `add`/`require` per
-  vulnerable package).
 - npm/pnpm/bun advisory fallback (the npm audit endpoint) mirroring the
   Packagist fallback for Composer.
