@@ -2,6 +2,10 @@
 
 All notable changes to `secure-lock-cli` will be documented in this file.
 
+## 1.7.3 - 2026-07-24
+
+Release 1.7.3
+
 ## 1.7.2 - 2026-06-06
 
 Adopt version.txt release flow (concurrency on builds).
@@ -24,6 +28,7 @@ For large projects, set a `GITHUB_TOKEN` to skip the rate-limited fallback path 
 composer global require jeffersongoncalves/secure-lock-cli
 
 
+
 ```
 ## 1.7.0 - 2026-06-01
 
@@ -37,6 +42,7 @@ Token-free audits for every ecosystem.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -57,6 +63,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.5.0 - 2026-06-01
 
@@ -70,6 +77,7 @@ Reliability for Composer without a token.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -100,6 +108,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.3.0 - 2026-06-01
 
@@ -115,6 +124,7 @@ Reliability, CI control and GitHub integration.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -145,6 +155,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.2.0 - 2026-06-01
 
@@ -157,6 +168,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -192,6 +204,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.2 - 2026-06-01
 
@@ -205,6 +218,7 @@ No changes to the audit behavior.
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
@@ -241,6 +255,7 @@ composer global require jeffersongoncalves/secure-lock-cli
 
 
 
+
 ```
 ## 1.0.0 - 2026-06-01
 
@@ -260,6 +275,7 @@ secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3)
 
 ```bash
 composer global require jeffersongoncalves/secure-lock-cli
+
 
 
 
