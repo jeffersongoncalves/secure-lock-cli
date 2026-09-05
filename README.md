@@ -34,6 +34,13 @@ Every package is checked against the registry and the GitHub Advisory
 Database, then classified — here six packages have a published fix (`SAFE`)
 and one only has a newer release (`UPDATE`).
 
+<p align="center">
+  <a href="https://github.com/jeffersongoncalves/secure-lock-cli/actions"><img src="https://github.com/jeffersongoncalves/secure-lock-cli/actions/workflows/run-tests.yml/badge.svg" alt="Tests" /></a>
+  <a href="https://packagist.org/packages/jeffersongoncalves/secure-lock-cli"><img src="https://img.shields.io/packagist/dt/jeffersongoncalves/secure-lock-cli" alt="Total Downloads" /></a>
+  <a href="https://github.com/jeffersongoncalves/secure-lock-cli/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jeffersongoncalves/secure-lock-cli" alt="License" /></a>
+  <img src="https://img.shields.io/badge/php-%3E%3D8.2-8892BF" alt="PHP 8.2+" />
+</p>
+
 ## Requirements
 
 - PHP `^8.2`
