@@ -1,292 +1,293 @@
 # Changelog
 
-All notable changes to `secure-lock-cli` will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-## 1.7.3 - 2026-07-24
+## [1.7.4] - 2026-09-08
 
-Release 1.7.3
+### Bug Fixes
 
-## 1.7.2 - 2026-06-06
+- **deps:** Update guzzlehttp/guzzle to patch security advisories
+- **ci:** Publish release as draft until PHAR asset is attached
+- **ci:** Use the correct resolve-version output in the publish step
 
-Adopt version.txt release flow (concurrency on builds).
+### CI/CD
 
-## 1.7.1 - 2026-06-01
+- Pin actions to commit SHA, add dependabot cooldown/composer, trim dist archive
+- **release:** Generate CHANGELOG.md and release notes with git-cliff
 
-Resilience fix for large projects.
+### Documentation
 
-### Fixed
+- Add Buy Me a Coffee sponsor link
+- Standardize README section structure
 
-- On a large project (hundreds of npm packages) the single npm-audit bulk request could fail as a whole — e.g. throttled after the big lookup burst — leaving **every** JS package `UNKNOWN` while Composer (a different host) recovered. The npm and Packagist advisory fallbacks now split into **batches of 80**: one failed batch no longer drags down the rest, and each request stays small enough to avoid size/rate thresholds.
+### Miscellaneous Tasks
 
-### Tip
+- Bump guzzlehttp/guzzle and guzzlehttp/psr7 for security advisories
+- Add GitHub Sponsors to FUNDING.yml
 
-For large projects, set a `GITHUB_TOKEN` to skip the rate-limited fallback path entirely (5000 req/h vs ~60).
+## [1.7.3] - 2026-07-24
 
-### Install / upgrade
+### CI/CD
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+- Replace split build/changelog/publish-phar workflows with a single release job
 
+### Refactor
 
+- Use jeffersongoncalves/laravel-zero-self-update package
 
-```
-## 1.7.0 - 2026-06-01
+## [1.7.2] - 2026-06-06
 
-Token-free audits for every ecosystem.
+### CI/CD
 
-### Added
+- **build:** Serialize builds with a concurrency group to avoid ref-lock race
 
-- **npm audit advisory fallback** — mirrors the Packagist fallback for the JS managers (npm/pnpm/bun/yarn). When a package's GitHub Advisory lookup fails (e.g. the rate limit without a token), the npm registry audit bulk endpoint is queried as a redundant source — one batched request posting the installed and latest version per package — recovering the result instead of leaving it `UNKNOWN`. **Every ecosystem can now be audited with no `GITHUB_TOKEN`.** Disable with `--no-npm-audit`.
+### Miscellaneous Tasks
 
-### Install / upgrade
+- Bump version to 1.7.2
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+## [1.7.1] - 2026-06-01
 
+### Other
 
+- Chunk advisory fallback requests to bound failure blast radius
 
+On a large project (hundreds of npm packages) the single npm-audit bulk POST
+could fail as a whole — e.g. throttled after the big lookup burst — leaving
+every JS package UNKNOWN while Composer (a different host) recovered. The npm
+and Packagist fallbacks now split into batches of 80: one bad batch no longer
+fails the rest, and each request stays small, so it is far less likely to hit
+a size/rate threshold. For large projects, setting GITHUB_TOKEN avoids the
+rate-limited fallback path entirely.
 
-```
-## 1.6.0 - 2026-06-01
+Bumps version.txt to 1.7.1.
 
-Transitive-aware fixes.
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
-### Changed
+## [1.7.0] - 2026-06-01
 
-- **`--fix` is now transitive-aware.** Each package carries whether the project depends on it directly or transitively. A direct dependency still gets a plain `add`/`require`/`install`; a transitive one — which an `install` cannot reach — is pinned through the manager's override mechanism instead: `overrides` (npm/bun), `pnpm.overrides` (pnpm) or `resolutions` (yarn) in `package.json`. Composer keeps `composer require`, which pins transitive packages too. The JSON `fix` object gains a `transitive` flag.
+### Other
 
-### Install / upgrade
+- Add npm audit advisory fallback for the JS ecosystem
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+Mirrors the Packagist fallback: when an npm/pnpm/bun/yarn package's GitHub
+lookup fails, the npm registry audit bulk endpoint is queried as a redundant
+source. The installed and latest versions are posted per package (the bulk
+endpoint filters by version), so Advisory::affects() recomputes current/latest
+alike. HttpFetcher gains a cache-aware post(). Every ecosystem can now be
+audited with no GITHUB_TOKEN. Disable with --no-npm-audit.
 
+Bumps version.txt to 1.7.0.
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
+## [1.6.0] - 2026-06-01
 
+### Other
 
-```
-## 1.5.0 - 2026-06-01
+- Make --fix transitive-aware (overrides / resolutions)
 
-Reliability for Composer without a token.
+Packages now carry isDirect, set by every lock reader (npm root deps, npm v1
+depth, pnpm/bun/yarn direct sets). The Fixer uses it: a direct dependency
+gets a plain add/require/install, while a transitive one — which an install
+cannot reach — is pinned via the manager's override mechanism: overrides
+(npm/bun), pnpm.overrides (pnpm) or resolutions (yarn). Composer keeps
+composer require, which pins transitive packages too. The JSON fix object
+gains a transitive flag.
 
-### Added
+Bumps version.txt to 1.6.0.
 
-- **Packagist advisory fallback** — when a Composer package's GitHub Advisory lookup fails (most often the rate limit without a `GITHUB_TOKEN`), the Packagist Security Advisories API is queried as a redundant backend. All failed packages ride in one batched `packages[]` request, and the result is recovered instead of being left `UNKNOWN`. **Composer can now be audited with no token at all.** npm is unaffected (no Packagist equivalent). Disable with `--no-packagist`.
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
-### Install / upgrade
+## [1.5.0] - 2026-06-01
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+### Other
 
+- Add Packagist Security Advisories as a redundant backend for Composer
 
+When a Composer package's GitHub advisory lookup fails (most often the rate
+limit without a token), the Packagist Security Advisories API is queried as a
+fallback — one batched packages[] request for every failed package — and the
+result is recovered instead of being left UNKNOWN. Composer can now be audited
+with no GITHUB_TOKEN at all. npm has no Packagist equivalent, so it is
+unaffected. Disable with --no-packagist.
 
+affectedVersions is parsed as a composer constraint where '|' is OR (each
+alternative a vulnerable range). The Auditor was split into enrich → Packagist
+recovery → classify so the fallback slots in cleanly.
 
+Bumps version.txt to 1.5.0.
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
-```
-## 1.4.0 - 2026-06-01
+## [1.4.0] - 2026-06-01
 
-Performance and code quality.
+### Other
 
-### Changed
+- Concurrent lookups via Http::pool and PHPStan level 6 in CI
 
-- **Concurrent lookups (#3)** — registry and advisory requests for every package are now fired concurrently with `Http::pool` (capped) through a shared `HttpFetcher`, collapsing a large lockfile's many sequential round-trips into a few waves. The fetcher centralises cache reuse and rate-limit/failure handling; only the rare package with >100 advisories paginates sequentially.
+#3 Registry and advisory lookups for every package are now fired concurrently
+through a shared HttpFetcher (Http::pool, capped), collapsing the audit's many
+sequential round-trips into a few waves. The fetcher centralises cache reuse
+and the failure/rate-limit semantics; clients expose url()/parse() so the
+Auditor can batch the first wave and only paginate the rare >100-advisory
+package sequentially.
 
-### Internal
+#8 Adds larastan/PHPStan at level 6 (clean, no baseline), a phpstan.yml
+workflow, and wires it into 'composer test' (lint + types + unit).
 
-- **PHPStan (#8)** — larastan at level 6 (clean, no baseline), a `phpstan.yml` workflow, and `composer test` now runs lint + types + unit.
+Bumps version.txt to 1.4.0.
 
-No changes to audit behavior or output.
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+- Avoid dead-catch in self-update by calling throwing methods directly
 
-### Install / upgrade
+components->task() swallows the closure's exception, so the surrounding
+catch was unreachable (PHPStan flagged it on PHP 8.2). Call download() and
+replacePhar() directly inside the try so their RuntimeException propagates
+to the handler.
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
+## [1.3.0] - 2026-06-01
 
+### Other
 
+- Add unverified-lookup detection, advisory ignore list, and SARIF output
 
+#1 Failed advisory lookups (rate limit, network error) are no longer mistaken
+for 'no advisories'. AdvisoryClient returns an AdvisoryResult that flags
+failure, classified as a new UNKNOWN verdict (never OK/SAFE). Failures are not
+cached, advisory pagination is followed, and --fail-on-unverified makes CI fail
+when anything could not be checked.
 
+#4 --ignore=<GHSA|CVE> (repeatable) plus a secure-lock.json config suppress
+accepted or un-patchable advisories; entries may carry an expiry after which
+they re-surface.
 
+#6 --sarif emits SARIF 2.1.0 for GitHub code scanning (Security tab), one rule
+and result per currently-vulnerable package with severity-mapped levels.
 
-```
-## 1.3.0 - 2026-06-01
+Bumps version.txt to 1.3.0.
 
-Reliability, CI control and GitHub integration.
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
-### Added
+## [1.2.1] - 2026-06-01
 
-- **Unverified detection (#1)** — a failed advisory lookup (rate limit, network error) is no longer mistaken for "no advisories". Such packages get a new **`UNKNOWN`** verdict (never `OK`/`SAFE`), failures aren't cached, advisory pagination is followed, and `--fail-on-unverified` makes CI fail when anything could not be checked. A security tool must not turn a failed request into a false all-clear.
-- **Ignore list (#4)** — `--ignore=<GHSA|CVE>` (repeatable) and a `secure-lock.json` config suppress accepted or un-patchable advisories. Entries may carry an `expires` date after which they re-surface.
-- **SARIF output (#6)** — `--sarif` emits SARIF 2.1.0 for GitHub code scanning; findings appear in the repository's Security tab. See the README for the upload-sarif workflow.
+### Other
 
-### Install / upgrade
+- Make all CLI output English; add audit and --fix screenshots
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+Verdict badges/labels, table headers (STATUS/ECO/PACKAGE/CURRENT/LATEST/NOTE),
+the summary line and the fix section are now English for an international
+audience. Adds two terminal screenshots (real tool output) to the README
+demonstrating the audit table and the --fix minimal-safe-version suggestions.
 
+Bumps version.txt to 1.2.1.
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
+## [1.2.0] - 2026-06-01
 
+### Other
 
+- Add yarn lockfile support and the --fix flag
 
+LockReader::readYarn parses classic v1 yarn.lock (custom format, multi-
+descriptor blocks) and berry v2+ (YAML, npm: descriptors); dev flags are
+inferred from a sibling package.json. yarn joins the npm-ecosystem managers
+with label 'yarn' and is auto-detected (pnpm > bun > yarn > npm) plus an
+explicit --yarn flag.
 
+--fix prints, per manager, the upgrade command for each currently-vulnerable
+package: the smallest version above the installed one that escapes every
+vulnerable range (from advisory patched versions + latest), or skips packages
+with no safe target. JSON mode gains a per-package 'fix' object.
 
-```
-## 1.2.1 - 2026-06-01
+Bumps version.txt to 1.2.0.
 
-### Changed
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
-- All CLI output is now **English** — verdict badges (`SAFE`/`RISKY`/`VULN`/`UPDATE`/`OK`), table headers (STATUS/ECO/PACKAGE/CURRENT/LATEST/NOTE), the summary line and the `--fix` section — for an international audience.
+## [1.1.0] - 2026-06-01
 
-### Docs
+### Other
 
-- Added two terminal screenshots (real tool output) to the README: the audit table and the `--fix` minimal-safe-version suggestions.
+- Add pnpm and bun lockfile support; show real manager in ECO column
 
-### Install / upgrade
+LockReader gains readPnpm (pnpm-lock.yaml v5/v6/v9, via symfony/yaml) and
+readBun (bun.lock text JSONC; bun.lockb binary is rejected with a hint). Both
+resolve to the npm ecosystem for registry and advisory lookups, so
+RegistryClient/AdvisoryClient are unchanged.
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+Package now carries a display-only manager label (composer/npm/pnpm/bun)
+surfaced in the ECO column and the JSON 'manager' field. The audit command
+auto-detects a single JS lockfile by priority (pnpm > bun > npm) and adds
+explicit --pnpm/--bun flags mirroring --npm.
 
+Bumps version.txt to 1.1.0.
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
+## [1.0.2] - 2026-06-01
 
+### Other
 
+- Make version.txt the source of truth for the embedded build version
 
+Eliminates the Packagist dist-cache race: build.yml and publish-phar now read
+the version from version.txt instead of resolving a git tag, and the move-tag
+dance is removed. The release tag is created on a commit whose committed
+builds/secure-lock already embeds the correct version, so the dist Packagist
+serves is right from the first read — no force-moved tag to miss.
 
+Bumps version.txt to 1.0.2 for the next release.
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
-```
-## 1.2.0 - 2026-06-01
+## [1.0.1] - 2026-06-01
 
-### Added
+### Other
 
-- **yarn** support — reads `yarn.lock` classic v1 (custom format) and berry v2+ (YAML). dev flags are inferred from a sibling `package.json`. Auto-detection priority is now pnpm > bun > yarn > npm, with an explicit `--yarn` flag.
-- **`--fix`** — prints, per package manager, the upgrade command for each currently-vulnerable package. The target is the smallest version above the installed one that escapes *every* vulnerable range (from advisory patched versions + latest), so the bump is minimal and verified. Packages with no safe target are skipped. In `--json` mode each package gains a `fix` object.
+- Move runtime libs to require-dev so the PHAR install only needs PHP
 
-### Install / upgrade
+illuminate/http, composer/semver and guzzle are bundled inside the prebuilt
+PHAR, so they must not be hard runtime requires — otherwise composer global
+require forces consumers to resolve Laravel 12 components, which conflicts
+with a global Laravel 13 install. Mirrors the git-worktree-cli layout where
+require is just php and everything else is dev (bundled at build time).
 
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
+## [1.0.0] - 2026-06-01
 
+### Other
 
+- Initial release: secure-lock dependency audit CLI
 
+Laravel Zero CLI auditing Composer (composer.lock) and npm
+(package-lock.json v1/v2/v3) dependencies. For each package: resolves the
+latest stable version (Packagist/npm), fetches GitHub Advisory Database
+advisories, and classifies into VULN / SAFE_UPDATE / RISKY_UPDATE / UPDATE
+/ OK, distinguishing a bump that leaves the vulnerable range from one that
+stays exposed.
 
+- audit command (default): risk-sorted table, per-verdict summary, --json,
+  --only-vuln, --no-dev, --cache-ttl, --github-token; CI exit codes 0/1/2
+- composer/semver for comparisons and GHSA AND-ranges
+- file-backed HTTP cache; Http facade with retry/timeout
+- self-update for PHAR installs
+- 23 Pest tests (Http::fake), Pint, GitHub Actions (tests/build/publish/changelog)
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+- Reset CHANGELOG to stub (maintained by update-changelog.yml on release)
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+- Add portfolio banner to README
 
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+- Fix parallel test race on shared lockfile basename
 
+writeTempLock now writes each fixture to a unique tests/tmp subdir, so the
+parallel runner no longer races two tests writing the same composer.lock.
 
-```
-## 1.1.0 - 2026-06-01
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
 
-### Added
 
-- **pnpm** support — reads `pnpm-lock.yaml` (lockfileVersion 5/6/9), including scoped packages and peer-dependency suffixes.
-- **bun** support — reads the `bun.lock` text lockfile (JSONC). The binary `bun.lockb` is rejected with a hint to generate the text lockfile.
-- The `ECO` column (and a new JSON `manager` field) now show the real package manager a dependency came from: `composer`, `npm`, `pnpm` or `bun`.
-- Explicit `--pnpm` and `--bun` path flags, mirroring `--npm`. JS lockfiles are auto-detected in the project directory by priority (pnpm > bun > npm).
-
-All JavaScript managers resolve against the shared npm ecosystem, so advisory and registry lookups are unchanged.
-
-### Install / upgrade
-
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
-
-
-
-
-
-
-
-
-
-
-
-```
-## 1.0.2 - 2026-06-01
-
-### Fixed
-
-- `secure-lock --version` reported the wrong version after install. The release pipeline now treats `version.txt` as the single source of truth for the embedded version and creates the tag on a commit whose committed PHAR already embeds the correct version — removing the git-describe / tag-move / Packagist dist-cache race that shipped 1.0.0/1.0.1 binaries reporting a stale version.
-
-No changes to the audit behavior.
-
-### Install / upgrade
-
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
-
-
-
-
-
-
-
-
-
-
-
-
-```
-## 1.0.1 - 2026-06-01
-
-### Fixed
-
-- `composer global require` failed to resolve on setups with newer global Laravel components. The prebuilt PHAR bundles its runtime libraries, so `illuminate/http`, `composer/semver` and `guzzlehttp/guzzle` moved from `require` to `require-dev` — installing the CLI now only needs PHP `^8.2` and no longer forces consumers to resolve Laravel 12 packages.
-
-No functional changes to the audit itself.
-
-### Install
-
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
-
-
-
-
-
-
-
-
-
-
-
-
-
-```
-## 1.0.0 - 2026-06-01
-
-Initial release.
-
-secure-lock audits Composer (composer.lock) and npm (package-lock.json v1/v2/v3) dependencies for known vulnerabilities and tells whether an available update actually leaves the vulnerable range — distinguishing a useful fix from a useless bump.
-
-### Highlights
-
-- `audit` command (default): risk-sorted table, per-verdict summary, `--json`, `--only-vuln`, `--no-dev`, `--cache-ttl`, `--github-token`.
-- Verdicts: VULN / SAFE_UPDATE / RISKY_UPDATE / UPDATE / OK.
-- CI exit codes: 0 clean, 1 on VULN/RISKY_UPDATE, 2 on input error.
-- GitHub Advisory Database + Packagist/npm registries, composer/semver (GHSA AND-ranges), file-backed HTTP cache.
-- `self-update` for PHAR installs.
-
-### Install
-
-```bash
-composer global require jeffersongoncalves/secure-lock-cli
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```
