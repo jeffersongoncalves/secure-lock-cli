@@ -2,6 +2,152 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-11-04
+
+### CI/CD
+
+- Pass release version input through env
+- Standardize dependabot config
+- Standardize tests workflow
+- Remove run-tests.yml (replaced by tests.yml)
+- Standardize tests workflow
+- Auto-merge dependabot github-actions minor/patch
+
+### Documentation
+
+- Point tests badge to tests.yml
+
+### Miscellaneous Tasks
+
+- Upgrade to Laravel Zero 13
+
+### Other
+
+- Bump shivammathur/setup-php (#16)
+
+Bumps the actions-deps group with 1 update: [shivammathur/setup-php](https://github.com/shivammathur/setup-php).
+
+
+Updates `shivammathur/setup-php` from 2.37.2 to 2.40.0
+- [Release notes](https://github.com/shivammathur/setup-php/releases)
+- [Commits](https://github.com/shivammathur/setup-php/compare/f3e473d116dcccaddc5834248c87452386958240...eb7c497e18156a6bbabfef1d3a82760b9eda3962)
+
+---
+updated-dependencies:
+- dependency-name: shivammathur/setup-php
+  dependency-version: 2.40.0
+  dependency-type: direct:production
+  update-type: version-update:semver-minor
+  dependency-group: actions-deps
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+- Auto-assign issues and pull requests
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+- Bump stefanzweifel/git-auto-commit-action (#18)
+
+Bumps the actions-deps group with 1 update: [stefanzweifel/git-auto-commit-action](https://github.com/stefanzweifel/git-auto-commit-action).
+
+
+Updates `stefanzweifel/git-auto-commit-action` from 7.2.0 to 7.2.1
+- [Release notes](https://github.com/stefanzweifel/git-auto-commit-action/releases)
+- [Changelog](https://github.com/stefanzweifel/git-auto-commit-action/blob/master/CHANGELOG.md)
+- [Commits](https://github.com/stefanzweifel/git-auto-commit-action/compare/4a55954c782fc1ea30b9056cd3e7a2b40ca8887d...d0b01107b5db882071f96de5dd4b54961ea93f4c)
+
+---
+updated-dependencies:
+- dependency-name: stefanzweifel/git-auto-commit-action
+  dependency-version: 7.2.1
+  dependency-type: direct:production
+  update-type: version-update:semver-patch
+  dependency-group: actions-deps
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+- Bump the composer-deps group across 1 directory with 6 updates
+
+Bumps the composer-deps group with 6 updates in the / directory:
+
+| Package | From | To |
+| --- | --- | --- |
+| [composer/semver](https://github.com/composer/semver) | `3.4.4` | `3.5.2` |
+| [jeffersongoncalves/laravel-zero-self-update](https://github.com/jeffersongoncalves/laravel-zero-self-update) | `1.0.0` | `1.1.0` |
+| [larastan/larastan](https://github.com/larastan/larastan) | `3.10.0` | `3.13.2` |
+| [laravel/pint](https://github.com/laravel/pint) | `1.29.1` | `1.32.1` |
+| [mockery/mockery](https://github.com/mockery/mockery) | `1.6.12` | `1.6.15` |
+| [symfony/yaml](https://github.com/symfony/yaml) | `7.4.18` | `8.1.10` |
+
+
+
+Updates `composer/semver` from 3.4.4 to 3.5.2
+- [Release notes](https://github.com/composer/semver/releases)
+- [Changelog](https://github.com/composer/semver/blob/main/CHANGELOG.md)
+- [Commits](https://github.com/composer/semver/compare/3.4.4...3.5.2)
+
+Updates `jeffersongoncalves/laravel-zero-self-update` from 1.0.0 to 1.1.0
+- [Release notes](https://github.com/jeffersongoncalves/laravel-zero-self-update/releases)
+- [Changelog](https://github.com/jeffersongoncalves/laravel-zero-self-update/blob/main/CHANGELOG.md)
+- [Commits](https://github.com/jeffersongoncalves/laravel-zero-self-update/compare/v1.0.0...v1.1.0)
+
+Updates `larastan/larastan` from 3.10.0 to 3.13.2
+- [Release notes](https://github.com/larastan/larastan/releases)
+- [Changelog](https://github.com/larastan/larastan/blob/3.x/RELEASE.md)
+- [Commits](https://github.com/larastan/larastan/compare/v3.10.0...v3.13.2)
+
+Updates `laravel/pint` from 1.29.1 to 1.32.1
+- [Release notes](https://github.com/laravel/pint/releases)
+- [Changelog](https://github.com/laravel/pint/blob/main/CHANGELOG.md)
+- [Commits](https://github.com/laravel/pint/compare/v1.29.1...v1.32.1)
+
+Updates `mockery/mockery` from 1.6.12 to 1.6.15
+- [Release notes](https://github.com/mockery/mockery/releases)
+- [Changelog](https://github.com/mockery/mockery/blob/1.6.x/CHANGELOG.md)
+- [Commits](https://github.com/mockery/mockery/compare/1.6.12...1.6.15)
+
+Updates `symfony/yaml` from 7.4.18 to 8.1.10
+- [Release notes](https://github.com/symfony/yaml/releases)
+- [Changelog](https://github.com/symfony/yaml/blob/8.2/CHANGELOG.md)
+- [Commits](https://github.com/symfony/yaml/compare/v7.4.18...v8.1.10)
+
+---
+updated-dependencies:
+- dependency-name: composer/semver
+  dependency-version: 3.5.2
+  dependency-type: direct:development
+  update-type: version-update:semver-minor
+  dependency-group: composer-deps
+- dependency-name: jeffersongoncalves/laravel-zero-self-update
+  dependency-version: 1.1.0
+  dependency-type: direct:development
+  update-type: version-update:semver-minor
+  dependency-group: composer-deps
+- dependency-name: larastan/larastan
+  dependency-version: 3.13.2
+  dependency-type: direct:development
+  update-type: version-update:semver-minor
+  dependency-group: composer-deps
+- dependency-name: laravel/pint
+  dependency-version: 1.32.1
+  dependency-type: direct:development
+  update-type: version-update:semver-minor
+  dependency-group: composer-deps
+- dependency-name: mockery/mockery
+  dependency-version: 1.6.15
+  dependency-type: direct:development
+  update-type: version-update:semver-patch
+  dependency-group: composer-deps
+- dependency-name: symfony/yaml
+  dependency-version: 8.1.10
+  dependency-type: direct:development
+  update-type: version-update:semver-major
+  dependency-group: composer-deps
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
 ## [1.7.4] - 2026-09-08
 
 ### Bug Fixes
